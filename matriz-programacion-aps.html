@@ -405,11 +405,11 @@ function viewConfig(){
     <div class="sec-title">Identificación</div>
     <div class="grid">
       <div>
-        <label class="f">Comuna</label>
+        <label class="f">Comuna${tip("Comuna del Servicio de Salud a la que pertenecen los centros que vas a programar.")}</label>
         <select id="fComuna" required>${opciones(CONFIG.comunas, estado.comuna)}</select>
       </div>
       <div>
-        <label class="f">Año de programación</label>
+        <label class="f">Año de programación${tip("Año para el que se programa (habitualmente el año siguiente). Determina los días hábiles y feriados.")}</label>
         <input id="fAnio" type="number" min="2024" max="2100" value="${estado.anio}" required>
       </div>
     </div>
@@ -417,12 +417,12 @@ function viewConfig(){
     <div class="sec-title">Días a programar <small style="text-transform:none;letter-spacing:0;font-weight:400">— parámetros comunales (se restan al año calendario)</small></div>
     <div class="grid">
       <div>
-        <label class="f">Feriados legales del año <small>(de carácter general)</small></label>
+        <label class="f">Feriados legales del año <small>(de carácter general)</small>${tip("Feriados legales de carácter general del país en el año. Los sábados y domingos los descuenta la herramienta sola.")}</label>
         <input id="fFeriados" type="number" min="0" step="0.5" value="${estado.feriadosLegales}">
       </div>
       ${CONFIG.diasRubros.map(r=>`
       <div>
-        <label class="f">${r.lbl}</label>
+        <label class="f">${r.lbl}${tip(TIPS_DIAS[r.k]||"Días que se restan al año calendario para obtener los días efectivos a programar.")}</label>
         <input class="fDia" data-k="${r.k}" type="number" min="0" step="0.5" value="${estado.dias[r.k]}">
       </div>`).join("")}
     </div>
@@ -438,11 +438,11 @@ function viewConfig(){
 
     <div class="grid" style="grid-template-columns:2fr 1fr auto;align-items:end">
       <div>
-        <label class="f">Centro de salud</label>
+        <label class="f">Centro de salud${tip("Establecimiento (CESFAM/CECOSF/posta) que vas a programar. Cada centro tendrá su propia población, dotación y actividades.")}</label>
         <select id="nCentro">${opciones(centrosDisponibles,"")}</select>
       </div>
       <div>
-        <label class="f">N° de sectores</label>
+        <label class="f">N° de sectores${tip("Cantidad de sectores territoriales en que se organiza el centro. Referencial para tu gestión.")}</label>
         <input id="nSectores" type="number" min="0" max="20" value="">
       </div>
       <div>
@@ -466,7 +466,7 @@ function viewConfig(){
     <div class="sec-title">☁️ Sincronización en la nube (por código)</div>
     <div class="desc" style="margin-bottom:12px">Guarda y recupera tus datos desde cualquier dispositivo usando un <b>código</b>. No necesita cuenta ni clave: el código es la llave — compártelo solo con tu equipo. Los datos siguen guardándose también en este navegador.</div>
     <div class="grid" style="grid-template-columns:1fr auto auto;align-items:end;gap:10px">
-      <div><label class="f">Código de sincronización</label><input id="nubeCode" type="text" placeholder="XXXX-XXXX-XXXX-XXXX" value="${escH(nubeCodigo())}" autocomplete="off" spellcheck="false"></div>
+      <div><label class="f">Código de sincronización${tip("Clave para guardar y recuperar tus datos en la nube desde cualquier dispositivo. Genera uno y guárdalo: es tu llave.")}</label><input id="nubeCode" type="text" placeholder="XXXX-XXXX-XXXX-XXXX" value="${escH(nubeCodigo())}" autocomplete="off" spellcheck="false"></div>
       <div><button class="btn btn-s" id="nubeGen" type="button">Generar</button></div>
       <div><button class="btn btn-s" id="nubeCopy" type="button">Copiar</button></div>
     </div>
@@ -568,6 +568,14 @@ function wireConfig(){
 function num(x){ const n=parseFloat(x); return isNaN(n)?0:n; }
 function escH(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 function tip(t){ return `<span class="tip" data-tip="${escH(t)}" title="${escH(t)}">i</span>`; }
+const TIPS_DIAS={
+  administrativos:"Días al año destinados a tareas administrativas del funcionario (fuera de atención directa).",
+  capacitacion:"Días al año de capacitación del personal.",
+  diaEstamento:"Día libre por estamento acordado en la comuna.",
+  mediosDias:"Medios días no laborales: tarde del 17 de septiembre, 24 y 31 de diciembre.",
+  contingencia:"Medios días de contingencia (11 de septiembre, 18 de octubre, 28 de mayo).",
+  otros:"Otros días acordados en la comuna (cumpleaños, autocuidado, etc.)."
+};
 function ensurePob(centro){
   if(!centro.poblacion) centro.poblacion={};
   const p=centro.poblacion;
@@ -652,7 +660,7 @@ function viewPoblacion(){
   </div>
 
   <div class="card">
-    <div class="sec-title" style="margin-top:0">A · Población Inscrita Validada <small style="text-transform:none;letter-spacing:0;font-weight:400">— FONASA per cápita. Ingresa Ambos sexos y Femenina; el resto es automático</small></div>
+    <div class="sec-title" style="margin-top:0">A · Población Inscrita Validada${tip("Población FONASA inscrita y validada en el centro, por grupo etario. Es la base para calcular las metas. Ingresa 'Ambos sexos' y 'Femenina'; la Masculina y los totales se calculan solos.")} <small style="text-transform:none;letter-spacing:0;font-weight:400">— FONASA per cápita. Ingresa Ambos sexos y Femenina; el resto es automático</small></div>
     <div style="overflow-x:auto">
     <table class="pobtab">
       <thead><tr><th>Grupo etario</th><th>Ambos sexos</th><th>Femenina</th><th>Masculina (auto)</th></tr></thead>
@@ -663,7 +671,7 @@ function viewPoblacion(){
   </div>
 
   <div class="card">
-    <div class="sec-title" style="margin-top:0">B · Población Bajo Control Infantil (0-9 años) <small style="text-transform:none;letter-spacing:0;font-weight:400">— usada para ajustar la programación cuando difiere de la inscrita</small></div>
+    <div class="sec-title" style="margin-top:0">B · Población Bajo Control Infantil (0-9 años)${tip("Niños/as de 0 a 9 años efectivamente bajo control en el centro. Se usa para ajustar la programación infantil cuando difiere de la población inscrita.")} <small style="text-transform:none;letter-spacing:0;font-weight:400">— usada para ajustar la programación cuando difiere de la inscrita</small></div>
     <div style="overflow-x:auto">
     <table class="pobtab">
       <thead><tr><th>Grupo etario</th><th>Ambos sexos</th><th>Femenina</th><th>Masculina (auto)</th></tr></thead>
@@ -674,7 +682,7 @@ function viewPoblacion(){
   </div>
 
   <div class="card">
-    <div class="sec-title" style="margin-top:0">C · Población Bajo Control por Programa</div>
+    <div class="sec-title" style="margin-top:0">C · Población Bajo Control por Programa${tip("Personas bajo control en cada programa (cardiovascular, salud mental, respiratorio, etc.). Ingresa la Pob. Bajo Control, la prevalencia estimada y el aumento comprometido; el resto es automático.")}</div>
     <div class="hint" style="margin-top:0;margin-bottom:14px"><span>📈</span>
       <div>El <b>aumento comprometido</b> es cuánto planea crecer el centro su población bajo control este año (habitualmente <b>+5% a +15%</b>). Con eso la herramienta calcula los <b>ingresos esperados</b> = personas nuevas a captar.</div></div>
     <div style="overflow-x:auto">
@@ -811,8 +819,14 @@ function viewDotacion(){
     <div class="desc">Registra el personal por estamento. La herramienta calcula la <b>dotación efectiva</b> (jornadas realmente disponibles) descontando tiempo no efectivo y feriado legal por antigüedad.</div>
     ${selCentro(c,'selCentroDot')}
     <div class="grid" style="grid-template-columns:2fr auto;align-items:end;margin-top:14px">
-      <div><label class="f">Agregar estamento</label><select id="selAddEst">${opciones(disp,"")}</select></div>
+      <div><label class="f">Agregar estamento${tip("Tipo de profesional o técnico. Agrega uno por cada estamento presente en el centro; luego cargas cuántas personas hay por jornada y antigüedad.")}</label><select id="selAddEst">${opciones(disp,"")}</select></div>
       <div><button class="btn btn-p" id="btnAddEst">＋ Agregar</button></div>
+    </div>
+    <div style="display:flex;gap:18px;flex-wrap:wrap;margin-top:12px;font-size:12.5px;color:var(--sub)">
+      <span><b>N° de personas</b> por jornada${tip("Cuántos funcionarios de ese estamento tienen cada tipo de jornada: 44, 33, 22 u 11 horas semanales.")}</span>
+      <span><b>&lt;15 / 15-20 / &gt;20 años</b>${tip("Antigüedad (años de cotización). Da derecho a más días de feriado legal → menos semanas efectivas al año (45 / 44 / 43 de 52).")}</span>
+      <span><b>T. no efectivo</b>${tip("Horas semanales que NO se dedican a atención directa (reuniones, colación, gestión). Se descuentan de la jornada.")}</span>
+      <span><b>Dotación efectiva</b>${tip("Jornadas realmente disponibles para programar, tras descontar tiempo no efectivo y feriado legal por antigüedad.")}</span>
     </div>
   </div>
   ${dot.length? dot.map(dotCard).join('') : `<div class="card"><div class="empty">Aún no agregas estamentos. Elige uno arriba ☝️</div></div>`}
