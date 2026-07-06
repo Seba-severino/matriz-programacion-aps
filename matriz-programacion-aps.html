@@ -4,9 +4,20 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Matriz de Programación APS · Herramienta Transversal</title>
+<meta name="description" content="Herramienta transversal para construir la matriz de programación APS de cualquier CESFAM (Chile).">
+<meta name="theme-color" content="#1C3A8A">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png" type="image/png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Matriz APS">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<!-- Firebase (sincronización en la nube por código) — carga solo online; offline/file:// se ignora -->
+<script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
 :root{
   --navy:#1C3A8A; --navy2:#2B4EAD; --navy3:#1866b8;
@@ -95,6 +106,9 @@ tr:last-child td{border-bottom:none}
 .hint b{font-weight:700}
 .savebar{position:sticky;bottom:0;background:var(--card);border-top:1px solid var(--line);padding:12px 22px;display:flex;gap:10px;align-items:center;margin:0 -20px -20px}
 .savebar .status{font-family:'DM Mono',monospace;font-size:11.5px;color:var(--sub);margin-right:auto;display:flex;align-items:center;gap:6px}
+.nube-msg{font-size:12.5px;min-height:18px;color:var(--sub)}
+.nube-msg.ok{color:var(--aps-verde-d);font-weight:600}
+.nube-msg.bad{color:var(--aps-rojo);font-weight:600}
 .dot{width:8px;height:8px;border-radius:50%;background:#bbb}
 .dot.ok{background:var(--aps-verde)}
 footer{text-align:center;color:var(--sub);font-size:12px;padding:24px}
@@ -170,7 +184,10 @@ td.calc.warn{color:var(--aps-rojo);font-weight:600}
     <div><b id="ctxComuna">Sin comuna</b></div>
     <div id="ctxCentros" style="opacity:.72">0 centros · año —</div>
   </div>
-  <button class="hbtn" id="themeBtn" onclick="toggleTheme()" title="Modo claro/oscuro" style="margin-left:14px">
+  <button class="hbtn" id="pwaBtn" onclick="instalarPWA()" title="Instalar como app" style="margin-left:14px;display:none;gap:.35rem;width:auto;padding:6px 12px;font-size:13px;font-weight:600">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 12 5 5 5-5"/><path d="M5 21h14"/></svg>Instalar
+  </button>
+  <button class="hbtn" id="themeBtn" onclick="toggleTheme()" title="Modo claro/oscuro" style="margin-left:8px">
     <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z"/></svg>
   </button>
 </header>
@@ -318,6 +335,7 @@ function guardar(silencioso){
   const d=document.getElementById("saveDot"), t=document.getElementById("saveTxt");
   if(d&&t){ d.classList.add("ok"); t.textContent = "Guardado local · "+new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}); }
   actualizarContexto();
+  if(typeof nubeAuto==="function") nubeAuto();
 }
 function guardarDebounced(){ clearTimeout(saveTimer); saveTimer=setTimeout(()=>guardar(true), 400); }
 
@@ -438,7 +456,21 @@ function viewConfig(){
       </tbody>
     </table>
 
-    <div class="savebar">
+    <div class="sec-title">☁️ Sincronización en la nube (por código)</div>
+    <div class="desc" style="margin-bottom:12px">Guarda y recupera tus datos desde cualquier dispositivo usando un <b>código</b>. No necesita cuenta ni clave: el código es la llave — compártelo solo con tu equipo. Los datos siguen guardándose también en este navegador.</div>
+    <div class="grid" style="grid-template-columns:1fr auto auto;align-items:end;gap:10px">
+      <div><label class="f">Código de sincronización</label><input id="nubeCode" type="text" placeholder="XXXX-XXXX-XXXX-XXXX" value="${escH(nubeCodigo())}" autocomplete="off" spellcheck="false"></div>
+      <div><button class="btn btn-s" id="nubeGen" type="button">Generar</button></div>
+      <div><button class="btn btn-s" id="nubeCopy" type="button">Copiar</button></div>
+    </div>
+    <div class="row-btns" style="margin-top:10px;align-items:center">
+      <button class="btn btn-p" id="nubeUp" type="button">☁️ Subir a la nube</button>
+      <button class="btn btn-a" id="nubeDown" type="button">⬇️ Bajar de la nube</button>
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--sub);margin-left:6px"><input type="checkbox" id="nubeAuto" style="width:auto" ${nubeAutoOn()?'checked':''}> Sincronizar automáticamente</label>
+    </div>
+    <div id="nubeMsg" class="nube-msg" style="margin-top:8px"></div>
+
+    <div class="savebar" style="margin-top:16px">
       <div class="status"><span class="dot" id="saveDot"></span><span id="saveTxt">${estado.actualizado?'Guardado local':'Sin guardar aún'}</span></div>
       <button class="btn btn-s" id="btnExport">⬇ Exportar respaldo (JSON)</button>
       <label class="btn btn-a" style="cursor:pointer">⬆ Importar respaldo
@@ -514,6 +546,13 @@ function wireConfig(){
   };
   const rs=g("btnReset");
   if(rs) rs.onclick=()=>{ if(confirm("¿Borrar TODOS los datos y empezar de cero? (Exporta un respaldo antes si quieres conservarlos)")){ estado=nuevoEstado(); guardar(); render(); } };
+  // Sincronización en la nube por código
+  const nc=g("nubeCode"); if(nc) nc.oninput=e=>{ e.target.value=setNubeCodigo(e.target.value); };
+  const ng=g("nubeGen"); if(ng) ng.onclick=()=>{ const code=nubeGenerarCodigo(); setNubeCodigo(code); if(nc) nc.value=code; nubeStatus("Código generado. Guárdalo: es tu llave para recuperar los datos.","ok"); };
+  const ncp=g("nubeCopy"); if(ncp) ncp.onclick=async()=>{ const v=nubeCodigo(); if(!v){ nubeStatus("No hay código que copiar.","bad"); return; } try{ await navigator.clipboard.writeText(v); nubeStatus("Código copiado al portapapeles.","ok"); }catch(e){ nubeStatus("Copia manual: "+v,""); } };
+  const nu=g("nubeUp"); if(nu) nu.onclick=async()=>{ nu.disabled=true; nubeStatus("Subiendo…",""); await nubeSubir(false); nu.disabled=false; };
+  const nd=g("nubeDown"); if(nd) nd.onclick=async()=>{ nd.disabled=true; nubeStatus("Buscando…",""); await nubeBajar(); nd.disabled=false; };
+  const na=g("nubeAuto"); if(na) na.onchange=e=>{ localStorage.setItem(AUTO_KEY, e.target.checked?"1":"0"); nubeStatus(e.target.checked?"Sincronización automática activada.":"Sincronización automática desactivada.",""); if(e.target.checked) nubeSubir(true); };
 }
 
 // ============================================================
@@ -1141,6 +1180,62 @@ function toggleTheme(){
   try{ t=localStorage.getItem("matriz_aps_tema")|| (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"); }catch(e){}
   aplicarTema(t);
 })();
+
+// ============================================================
+// SINCRONIZACIÓN EN LA NUBE POR CÓDIGO (Firestore, sin cuentas)
+// El código actúa como llave: solo quien lo conoce accede a ese documento.
+// ============================================================
+const FB_CONFIG={apiKey:"AIzaSyCw5_1CsqLXHp9pp_DmOaRo2I_HR0iF9Xg",authDomain:"matriz-aps-ssmso.firebaseapp.com",projectId:"matriz-aps-ssmso",storageBucket:"matriz-aps-ssmso.firebasestorage.app",messagingSenderId:"353201423301",appId:"1:353201423301:web:575edaaf06781fceeb41ac"};
+let _db=null;
+function fbDB(){ if(_db) return _db; if(typeof firebase==="undefined") return null; try{ if(!firebase.apps.length) firebase.initializeApp(FB_CONFIG); _db=firebase.firestore(); return _db; }catch(e){ return null; } }
+const CODE_KEY="matriz_aps_codigo", AUTO_KEY="matriz_aps_nube_auto";
+function nubeCodigo(){ return localStorage.getItem(CODE_KEY)||""; }
+function setNubeCodigo(v){ v=(v||"").trim().toUpperCase().replace(/[^A-Z0-9-]/g,""); localStorage.setItem(CODE_KEY,v); return v; }
+function nubeGenerarCodigo(){ const abc="ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; let s=""; for(let i=0;i<16;i++) s+=abc[Math.floor(Math.random()*abc.length)]; return s.replace(/(.{4})(.{4})(.{4})(.{4})/,"$1-$2-$3-$4"); }
+function nubeAutoOn(){ return localStorage.getItem(AUTO_KEY)==="1"; }
+function nubeStatus(msg,cls){ const el=document.getElementById("nubeMsg"); if(el){ el.textContent=msg; el.className="nube-msg "+(cls||""); } }
+// Firestore no rechaza escrituras si el backend no está (las encola offline) → timeout para no colgar la UI.
+function _conTimeout(p,ms){ return Promise.race([p, new Promise((_,rej)=>setTimeout(()=>rej(new Error("sin-conexion")), ms))]); }
+async function nubeSubir(silent){
+  const db=fbDB(), code=nubeCodigo().replace(/-/g,"");
+  if(!db){ if(!silent) nubeStatus("Sin conexión a la nube (revisa tu internet).","bad"); return false; }
+  if(code.length<12){ if(!silent) nubeStatus("Primero genera o ingresa un código válido.","bad"); return false; }
+  try{
+    await _conTimeout(db.collection("matrices").doc(code).set({ data:JSON.stringify(estado), comuna:estado.comuna||"", anio:estado.anio||"", nCentros:(estado.centros||[]).length, updatedAt:Date.now(), app:"matriz-aps" }), 12000);
+    if(!silent) nubeStatus("✓ Guardado en la nube · "+new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}),"ok");
+    return true;
+  }catch(e){ if(!silent) nubeStatus(e.message==="sin-conexion"?"No se pudo conectar a la nube (reintenta en un momento).":"Error al subir: "+(e.code||e.message||e),"bad"); return false; }
+}
+async function nubeBajar(){
+  const db=fbDB(), code=nubeCodigo().replace(/-/g,"");
+  if(!db){ nubeStatus("Sin conexión a la nube (revisa tu internet).","bad"); return; }
+  if(code.length<12){ nubeStatus("Ingresa el código a recuperar.","bad"); return; }
+  try{
+    const snap=await _conTimeout(db.collection("matrices").doc(code).get(), 12000);
+    if(!snap.exists){ nubeStatus("No hay datos guardados con ese código.","bad"); return; }
+    const d=snap.data();
+    if(!confirm("Esto reemplazará los datos actuales por los de la nube ("+(d.comuna||"sin comuna")+" · "+(d.nCentros||0)+" centros). ¿Continuar?")) return;
+    estado=Object.assign(nuevoEstado(), JSON.parse(d.data)); guardar(); render();
+    nubeStatus("✓ Datos cargados desde la nube.","ok");
+  }catch(e){ nubeStatus(e.message==="sin-conexion"?"No se pudo conectar a la nube (reintenta en un momento).":"Error al bajar: "+(e.code||e.message||e),"bad"); }
+}
+let _nubeTimer=null;
+function nubeAuto(){ if(!nubeAutoOn()) return; clearTimeout(_nubeTimer); _nubeTimer=setTimeout(()=>nubeSubir(true),2500); }
+
+// ============================================================
+// PWA — service worker + instalación (solo sobre http/https; en file:// se ignora)
+// ============================================================
+let deferredPrompt=null;
+if("serviceWorker" in navigator && location.protocol.startsWith("http")){
+  window.addEventListener("load",()=>{ navigator.serviceWorker.register("service-worker.js").catch(()=>{}); });
+}
+window.addEventListener("beforeinstallprompt",(e)=>{ e.preventDefault(); deferredPrompt=e; const b=document.getElementById("pwaBtn"); if(b) b.style.display="inline-flex"; });
+window.addEventListener("appinstalled",()=>{ deferredPrompt=null; const b=document.getElementById("pwaBtn"); if(b) b.style.display="none"; });
+function instalarPWA(){
+  if(!deferredPrompt){ alert("Para instalar:\n• Chrome/Edge (PC): ícono de instalar en la barra de direcciones.\n• Android: menú ⋮ → 'Instalar aplicación'.\n• iPhone (Safari): Compartir → 'Agregar a pantalla de inicio'."); return; }
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.finally(()=>{ deferredPrompt=null; const b=document.getElementById("pwaBtn"); if(b) b.style.display="none"; });
+}
 
 // ============================================================
 // INIT
