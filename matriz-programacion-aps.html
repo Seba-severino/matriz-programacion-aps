@@ -293,8 +293,8 @@ const CONFIG = {
   instrumentos: ["Médico(a) General","Médico(a) Familiar","Médico(a) Familiar del Niño","Médico(a) Familiar del Adulto","Médico(a) Pediatra","Médico(a) Internista","Médico(a) Ginecobstetra","Médico(a) Psiquiatra Infantojuvenil","Médico(a) Psiquiatra Adulto","Médico(a) Oftalmología","Médico(a) Otorrinolaringología","Odontólogo(a) General","Odontólogo(a) Periodoncista","Odontólogo(a) Endodoncista","Odontólogo(a) Rehabilitador","Químico(a) Farmacéutico(a)","Enfermero(a)","Matrón(a)","Nutricionista","Kinesiólogo(a)","Psicólogo(a)","Trabajadora(a) Social","Terapeuta Ocupacional","Fonoaudiólogo(a)","Tecnólogo(a) Optometría","Tecnólogo(a) Imagenología","Educador(a) de Párvulos","Educador(a) Diferencial","Profesor(a) de Educación Física","Técnico(a) en Enfermería Nivel Superior","Técnico(a) en Odontología Nivel Superior","Técnico(a) en Imagenología Nivel Superior","Técnico(a) Social","Técnico(a) Asistente de Párvulos","Técnico(a) Asistente de Educación Diferencial","Técnico(a) Deportivo","Gestor(a) Comunitario(a)","Podólogo(a)"],
   jornadas: [44,33,22,11],
   antiguedades: [{k:"a1",lbl:"< 15 años",sem:45},{k:"a2",lbl:"15 a 20 años",sem:44},{k:"a3",lbl:"> 20 años",sem:43}],
-  tneDef: {44:7.1, 33:4, 22:2.5, 11:0.5},   // tiempo no efectivo semanal por jornada (editable)
-  jornadaEfSemanalRef: 36.9,                 // jornada efectiva semanal de referencia (44h)
+  tneDef: {44:6.25, 33:2.5, 22:2.5, 11:0.5}, // tiempo no efectivo semanal por jornada (editable) — calibrado a la planilla oficial SSMSO (44h=6,25)
+  jornadaEfSemanalRef: 37.75,                // jornada efectiva semanal de referencia (44h−6,25=37,75) = denominador oficial D12 de 'Cálculo Recursos'
   pasos: [
     {id:"config",     n:1, lbl:"Configuración", sub:"Comuna y centros", soon:false},
     {id:"poblacion",  n:2, lbl:"Población",      sub:"Inscritos y PBC",   soon:false},
@@ -835,7 +835,40 @@ function wireDotacion(){
 // MÓDULO ACTIVIDADES
 // ============================================================
 let actDraft=null;
-function blankAct(){ return {cv:"",am:"",po:"",prestacion:"",actividad:"",dedicacion:"Asistencial",instrumento:"",modo:"pob",metaDirecta:"",inscritos:"",prev:"100",cob:"100",conc:"1",part:"1",ajuste:"15",distrib:"100",rend:""}; }
+// ── Catálogo nacional Metas/IAAPS 2026 (fuente SARS/MINSAL) + ruta REM e indicador por prestación ──
+const CATALOGO_IND=["Meta I","Meta II","Meta IIIa","Meta IIIb","Meta IVa","Meta IVb","Meta V","Meta VI","Meta VII","Meta VIII","IAAPS 1","IAAPS 2.1","IAAPS 2.2","IAAPS 3","IAAPS 4","IAAPS 5","IAAPS 6.1a","IAAPS 6.1b","IAAPS 6.2","IAAPS 7","IAAPS 8","IAAPS 9.1","IAAPS 9.2","IAAPS 9.3","IAAPS 10","IAAPS 11","IAAPS 12","IAAPS 13","IAAPS 14","IAAPS 15","IAAPS 16","IAAPS 17","IAAPS 18","IAAPS 19"];
+const RUTA_REM={
+  "Estrategia de Cuidado Integral Centrado en las Personas":"REM P04",
+  "Salud Mental Integral":"REM A05 / A06","Plan de Salud Familiar":"REM A01",
+  "Supervisión de Salud Integral":"REM A03 / A02","ChCC - Programa de Apoyo al Desarrollo Biopsicosocial":"REM A03 / P02",
+  "Rehabilitación Integral":"REM A07","Salud Respiratoria":"REM A23 / P03",
+  "Dependencia":"REM P09 / A05","Programa Nacional de Inmunizaciones":"REM A11a",
+  "Salud Sexual y Reproductiva":"REM A05 / P01 / P12","Salud Cardiovascular":"REM P04",
+  "PRAPS Odontológico Integral":"REM A09 / A03 D.7","PRAPS Resolutividad":"REM A09 / A28",
+  "Servicios Farmacéuticos":"REM A29","PRAPS Acompañamiento Psicosocial NNAJ":"REM A05",
+  "PRAPS Mejoramiento Acceso Atención Odontológica":"REM A09","Manejo de la Malnutrición Infantil":"REM A03 / A08",
+  "ChCC - Programa de Apoyo a la Salud Mental Infantil":"REM A05 / A06","Alimentación Complementaria":"REM A08",
+  "Referencia y Contrarreferencia":"REM A07","PRAPS Más Adultos Mayores Autovalentes":"REM P09 / A08",
+  "Gestión de la demanda":"REM A28 / A27","PRAPS Sembrando Sonrisas":"REM A09",
+  "PRAPS Red Mejor Niñez":"REM A03 / A05","PRAPS GES Odontológico":"REM A09","Cuidados Paliativos":"REM A05"
+};
+const META_PREST={
+  "Estrategia de Cuidado Integral Centrado en las Personas":"IAAPS 14","Salud Mental Integral":"IAAPS 9.1",
+  "Plan de Salud Familiar":"IAAPS 3","Supervisión de Salud Integral":"IAAPS 7",
+  "ChCC - Programa de Apoyo al Desarrollo Biopsicosocial":"Meta I","Salud Respiratoria":"Meta VII",
+  "Programa Nacional de Inmunizaciones":"IAAPS 11","Salud Sexual y Reproductiva":"IAAPS 12",
+  "Salud Cardiovascular":"IAAPS 15","PRAPS Odontológico Integral":"Meta IIIa",
+  "PRAPS Acompañamiento Psicosocial NNAJ":"IAAPS 9.1","PRAPS Mejoramiento Acceso Atención Odontológica":"Meta IIIa",
+  "Manejo de la Malnutrición Infantil":"IAAPS 18","ChCC - Programa de Apoyo a la Salud Mental Infantil":"IAAPS 9.1",
+  "Referencia y Contrarreferencia":"IAAPS 4","PRAPS GES Odontológico":"Meta IIIa"
+};
+// Aplica ruta REM + indicador sugerido según la prestación (sin pisar lo que el usuario ya editó a mano)
+function aplicarPrestacion(a,forzar){
+  const r=RUTA_REM[a.prestacion]||""; const ind=META_PREST[a.prestacion]||"";
+  if(forzar || !a.rem) a.rem=r;
+  if(forzar || !a.indicador) a.indicador=ind;
+}
+function blankAct(){ return {cv:"",am:"",po:"",prestacion:"",actividad:"",dedicacion:"Asistencial",instrumento:"",modo:"pob",metaDirecta:"",inscritos:"",prev:"100",cob:"100",conc:"1",part:"1",ajuste:"15",distrib:"100",rend:"",rem:"",indicador:""}; }
 function ensureAct(c){ if(!Array.isArray(c.actividades)) c.actividades=[]; return c.actividades; }
 function computeAct(a){
   const ajuste=num(a.ajuste)/100, rend=num(a.rend);
@@ -869,7 +902,7 @@ function viewActividades(){
   if(!actDraft) actDraft=blankAct();
   const d=actDraft; const cp=computeAct(d);
   const filas = acts.length? acts.map((a,i)=>{ const r=computeAct(a); return `<tr>
-      <td>${i+1}</td><td>${escH(a.actividad)}${a.modo==='directa'?' <span class="tag" style="background:#eef;color:#3949ab">directa</span>':''}</td><td><small>${escH(a.prestacion)||'—'}</small></td>
+      <td>${i+1}</td><td>${escH(a.actividad)}${a.modo==='directa'?' <span class="tag" style="background:#eef;color:#3949ab">directa</span>':''}${a.indicador?` <span class="tag" style="background:rgba(155,107,197,.14);color:var(--violet)">${escH(a.indicador)}</span>`:''}</td><td><small>${escH(a.prestacion)||'—'}${a.rem?` · <span style="color:var(--sub)">${escH(a.rem)}</span>`:''}</small></td>
       <td><small>${escH(a.instrumento)||'—'}${num(a.distrib)<100?` · ${num(a.distrib)}%`:''}</small></td><td class="calc">${r.metaInstr}</td><td class="calc strong">${fmt(r.jor)}</td>
       <td><button class="btn btn-danger" data-delact="${a.id}" style="padding:4px 9px">✕</button></td></tr>`; }).join('')
       : `<tr><td colspan="7" class="empty">Aún no agregas actividades. Completa el formulario ☝️</td></tr>`;
@@ -891,6 +924,8 @@ function viewActividades(){
       <div><label class="f">Tipo de cálculo</label><select id="aModo"><option value="pob" ${d.modo!=='directa'?'selected':''}>Por población</option><option value="directa" ${d.modo==='directa'?'selected':''}>Meta directa (operativas/gestión)</option></select></div>
       <div><label class="f">Prestación / Programa</label><select id="aPrest">${opciones(CONFIG.prestaciones,d.prestacion)}</select></div>
       <div><label class="f">Actividad</label><input id="aAct" type="text" value="${escH(d.actividad)}" placeholder="Ej. Control de salud infantil"></div>
+      <div><label class="f">Ruta REM <small>(auto por prestación · editable)</small></label><input id="aRem" type="text" value="${escH(d.rem)}" placeholder="Ej. REM A03"></div>
+      <div><label class="f">Indicador asociado <small>(Meta/IAAPS)</small></label><select id="aInd"><option value="">— ninguno —</option>${CATALOGO_IND.map(x=>`<option ${x===d.indicador?'selected':''}>${x}</option>`).join('')}</select></div>
       <div><label class="f">Dedicación</label><select id="aDed">${opciones(CONFIG.dedicacion,d.dedicacion)}</select></div>
       <div><label class="f">Instrumento (estamento)</label><select id="aInst">${opciones(CONFIG.instrumentos,d.instrumento)}</select></div>
       <div><label class="f">Distribución por instrumento <small>%</small></label><input id="aDist" type="number" min="0" max="100" step="5" value="${d.distrib}"></div>
@@ -937,9 +972,11 @@ function wireActividades(){
   const c=centroActivo(); const acts=ensureAct(c);
   const sc=document.getElementById("selCentroAct"); if(sc) sc.onchange=e=>{centroSel=e.target.value;render();};
   const bind=(id,key,pct)=>{ const el=document.getElementById(id); if(el) el.oninput=e=>{ actDraft[key]=e.target.value; recomputeActPreview(); }; };
-  bind("aPrest","prestacion");bind("aAct","actividad");bind("aDed","dedicacion");bind("aInst","instrumento");
+  bind("aAct","actividad");bind("aDed","dedicacion");bind("aInst","instrumento");
   bind("aIns","inscritos");bind("aPrev","prev");bind("aCob","cob");bind("aConc","conc");bind("aPart","part");bind("aAj","ajuste");bind("aRend","rend");
-  bind("aDist","distrib");bind("aMetaD","metaDirecta");
+  bind("aDist","distrib");bind("aMetaD","metaDirecta");bind("aRem","rem");
+  const prest=document.getElementById("aPrest"); if(prest) prest.onchange=e=>{ actDraft.prestacion=e.target.value; aplicarPrestacion(actDraft,true); render(); };
+  const ind=document.getElementById("aInd"); if(ind) ind.onchange=e=>{ actDraft.indicador=e.target.value; };
   const modo=document.getElementById("aModo"); if(modo) modo.onchange=e=>{ actDraft.modo=e.target.value; render(); };
   const insPob=document.getElementById("aInsPob"); if(insPob) insPob.onchange=e=>{ if(e.target.value!==""){ actDraft.inscritos=e.target.value; const ai=document.getElementById("aIns"); if(ai)ai.value=e.target.value; recomputeActPreview(); } };
   const min=document.getElementById("aMin");
@@ -979,6 +1016,7 @@ function autofillBib(idx){
   actDraft.cv=b.cv||""; actDraft.am=b.am||""; actDraft.po=b.po||"";
   actDraft.prestacion=b.pr||""; actDraft.actividad=b.ac||""; actDraft.dedicacion=b.de||"Asistencial";
   actDraft.instrumento=b.in||"";
+  aplicarPrestacion(actDraft,true);   // ruta REM + indicador según la prestación
   actDraft.prev = b.pv!=null? String(+(b.pv*100).toFixed(1)) : "";
   actDraft.cob  = b.cb!=null? String(+(b.cb*100).toFixed(1)) : "";
   actDraft.conc = b.co!=null? String(b.co) : "1";
@@ -1063,8 +1101,8 @@ function wireRevision(){
   const csv=document.getElementById("btnCSV");
   if(csv) csv.onclick=()=>{
     const acts=ensureAct(c);
-    const head=["Prestacion","Actividad","Dedicacion","Instrumento","Inscritos","Prevalencia%","Cobertura%","Concentracion","Participantes","Ajuste%","Rendimiento","Beneficiados","Meta","ActProgramar","Jornadas"];
-    const rows=acts.map(a=>{ const r=computeAct(a); return [a.prestacion,a.actividad,a.dedicacion,a.instrumento,a.inscritos,a.prev,a.cob,a.conc,a.part,a.ajuste,a.rend,r.benef,r.meta,r.actProg,fmt(r.jor)]; });
+    const head=["Prestacion","Actividad","Ruta REM","Indicador","Dedicacion","Instrumento","Inscritos","Prevalencia%","Cobertura%","Concentracion","Participantes","Ajuste%","Rendimiento","Beneficiados","Meta","ActProgramar","Jornadas"];
+    const rows=acts.map(a=>{ const r=computeAct(a); return [a.prestacion,a.actividad,a.rem||"",a.indicador||"",a.dedicacion,a.instrumento,a.inscritos,a.prev,a.cob,a.conc,a.part,a.ajuste,a.rend,r.benef,r.meta,r.actProg,fmt(r.jor)]; });
     const esc=v=>`"${String(v==null?'':v).replace(/"/g,'""')}"`;
     const csvTxt="﻿"+[head,...rows].map(r=>r.map(esc).join(";")).join("\n");
     const blob=new Blob([csvTxt],{type:"text/csv;charset=utf-8"});
@@ -1107,7 +1145,7 @@ function ofiAppendActs(s2, acts){
   let last=0; for(const mm of s2.matchAll(/<row r="(\d+)"/g)){ const n=+mm[1]; if(n>last)last=n; }
   const cell=(col,nr,val,isNum)=>{ if(val===""||val==null||(isNum&&isNaN(Number(val)))) return ""; return isNum? '<c r="'+col+nr+'"><v>'+Number(val)+'</v></c>' : '<c r="'+col+nr+'" t="inlineStr"><is><t xml:space="preserve">'+ofiEsc(val)+'</t></is></c>'; };
   // Se anexan DEBAJO del rango que suma 'Balance Dotación' ($W$4:$W$2185) para no duplicar jornadas.
-  let nr=Math.max(last+2, 2188), rows='<row r="'+nr+'">'+cell("F",nr,"▼ ACTIVIDADES REGISTRADAS EN EL PANEL ("+acts.length+") — bloque de referencia, no suma al Balance",false)+'</row>'; nr++;
+  let nr=Math.max(last+2, 2188), rows='<row r="'+nr+'">'+cell("F",nr,"▼ ACTIVIDADES REGISTRADAS EN EL PANEL ("+acts.length+") — bloque de referencia, no suma al Balance",false)+cell("Y",nr,"Ruta REM",false)+cell("Z",nr,"Indicador",false)+'</row>'; nr++;
   acts.forEach(a=>{ const r=computeAct(a), dir=a.modo==='directa';
     rows += '<row r="'+nr+'">'
       +cell("B",nr,a.cv,false)+cell("C",nr,a.prestacion,false)+cell("D",nr,a.am,false)+cell("E",nr,a.dedicacion,false)
@@ -1117,6 +1155,7 @@ function ofiAppendActs(s2, acts){
       +cell("N",nr,r.meta,true)+cell("O",nr,num(a.ajuste)/100,true)+cell("P",nr,r.actProg,true)
       +cell("Q",nr,a.instrumento,false)+cell("R",nr,(a.distrib==null||a.distrib==="")?1:num(a.distrib)/100,true)
       +cell("S",nr,r.metaInstr,true)+cell("T",nr,num(a.rend),true)+cell("U",nr,+r.U.toFixed(2),true)+cell("W",nr,+r.jor.toFixed(4),true)
+      +cell("Y",nr,a.rem,false)+cell("Z",nr,a.indicador,false)
       +'</row>'; nr++;
   });
   const idx=s2.indexOf('</sheetData>'); s2=s2.slice(0,idx)+rows+s2.slice(idx);
