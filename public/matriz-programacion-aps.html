@@ -67,6 +67,12 @@ main{padding:22px;padding-bottom:64px;min-width:0;max-width:1080px}
 .nitem.done .nnum{background:var(--cyan);border-color:var(--cyan);color:var(--navy)}
 .nitem .nlbl{line-height:1.2}
 .nitem .nlbl small{display:block;font-weight:400;color:var(--muted2);font-size:.68rem}
+.nitem .nlbl{flex:1}
+.nbadge{font-family:'DM Mono',monospace;font-size:.62rem;background:var(--s2);border:1px solid var(--border2);color:var(--sub);border-radius:100px;padding:.1rem .45rem;white-space:nowrap;flex-shrink:0}
+.nitem.done .nbadge{background:rgba(0,196,196,.14);border-color:var(--cyan);color:var(--cyan-text,#0891a5)}
+/* Guía "qué falta" al inicio de cada paso */
+.guia{display:flex;align-items:flex-start;gap:9px;background:rgba(0,196,196,.09);border:1px solid var(--border2);border-radius:11px;padding:11px 14px;margin-bottom:16px;font-size:13.7px;color:var(--txt);line-height:1.45}
+.guia-ic{flex-shrink:0}
 .sbfoot{margin:1rem 1rem 0;padding:.75rem .85rem;background:var(--s2);border:1px solid var(--line);border-radius:10px;font-size:.72rem;color:var(--sub);line-height:1.45}
 .sbfoot-t{font-weight:600;color:var(--txt);margin-bottom:.25rem;font-size:.74rem}
 #mob-overlay{display:none}
@@ -363,18 +369,44 @@ function actualizarContexto(){
   document.getElementById("ctxCentros").textContent =
     `${estado.centros.length} ${estado.centros.length===1?'centro':'centros'} · año ${estado.anio||'—'}`;
 }
+// Estado de avance por paso (para el progreso del menú)
+function pasoInfo(){
+  const cen=estado.centros;
+  const pobN=cen.filter(c=>c.poblacion&&Array.isArray(c.poblacion.iv)&&c.poblacion.iv.some(r=>num(r.a)>0)).length;
+  const dotN=cen.reduce((s,c)=>s+((c.dotacion||[]).length),0);
+  const actN=cen.reduce((s,c)=>s+((c.actividades||[]).length),0);
+  return {
+    config:{done:!!(estado.comuna&&cen.length>0), badge: cen.length? cen.length+(cen.length===1?' centro':' centros'):null},
+    poblacion:{done:pobN>0, badge: cen.length? pobN+'/'+cen.length : null},
+    dotacion:{done:dotN>0, badge: dotN>0? dotN+(dotN===1?' est.':' est.') : null},
+    actividades:{done:actN>0, badge: actN>0? actN+(actN===1?' act.':' act.') : null},
+    revision:{done:false, badge:null}
+  };
+}
 function renderStepper(){
   const el=document.getElementById("nav");
-  const cfgListo = estado.comuna && estado.centros.length>0;
+  const info=pasoInfo();
   el.innerHTML = CONFIG.pasos.map(p=>{
     const active = p.id===pasoActual;
-    const done = p.id==="config" && cfgListo && !active;
-    return `<div class="nitem ${active?'active':''} ${done?'done':''}" data-goto="${p.id}">
-      <div class="nnum">${done?'✓':p.n}</div>
+    const st=info[p.id]||{};
+    return `<div class="nitem ${active?'active':''} ${st.done?'done':''}" data-goto="${p.id}">
+      <div class="nnum">${st.done?'✓':p.n}</div>
       <div class="nlbl">${p.lbl}<small>${p.sub}</small></div>
+      ${st.badge?`<span class="nbadge">${st.badge}</span>`:''}
     </div>`;
   }).join("");
   el.querySelectorAll(".nitem").forEach(s=>s.onclick=()=>irA(s.dataset.goto));
+}
+// Guía "¿qué falta?" para el paso actual (orienta el siguiente movimiento sin perderse)
+function guiaPaso(){
+  const p=pasoActual, cen=estado.centros;
+  if(p==='config'){ if(!estado.comuna) return 'Empieza eligiendo tu <b>comuna</b>.'; if(!cen.length) return 'Agrega al menos un <b>centro</b> para poder continuar.'; return 'Listo el Paso 1. Avanza a <b>Población</b> en el menú.'; }
+  if(!cen.length) return 'Primero agrega un centro en el <b>Paso 1 · Configuración</b>.';
+  const c=centroActivo();
+  if(p==='poblacion'){ const has=c.poblacion&&Array.isArray(c.poblacion.iv)&&c.poblacion.iv.some(r=>num(r.a)>0); if(!has) return 'Ingresa la <b>población inscrita</b> de este centro (al menos los grupos que vas a atender).'; return 'Población cargada. Sigue con <b>Dotación</b>.'; }
+  if(p==='dotacion'){ if(!(c.dotacion||[]).length) return 'Agrega los <b>estamentos</b> y cuántas personas hay por jornada y antigüedad.'; return 'Dotación cargada. Sigue con <b>Actividades</b>.'; }
+  if(p==='actividades'){ if(!(c.actividades||[]).length) return 'Agrega tu primera <b>actividad</b>. Consejo: búscala en la <b>biblioteca oficial</b> y autocompleta los parámetros; solo ajusta población y cobertura.'; return 'Actividades cargadas. Revisa el resultado en <b>Revisión</b>.'; }
+  return null;
 }
 function irA(id){ pasoActual=id; if(window.innerWidth<=820) document.getElementById("app").classList.add("nav-hidden"), document.getElementById("mob-overlay").classList.remove("show"); render(); window.scrollTo(0,0); }
 function toggleNav(){
@@ -392,6 +424,8 @@ function render(){
   else if(pasoActual==="actividades") v.innerHTML = viewActividades();
   else if(pasoActual==="revision") v.innerHTML = viewRevision();
   else v.innerHTML = viewPlaceholder(pasoActual);
+  const g=guiaPaso();
+  if(g) v.insertAdjacentHTML('afterbegin', `<div class="guia"><span class="guia-ic">👉</span><span>${g}</span></div>`);
   wireConfig();
   wirePoblacion();
   wireDotacion();
