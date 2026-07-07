@@ -2,7 +2,7 @@
 
 Herramienta web **single-file** (HTML autónomo, sin backend ni login) para construir la
 Matriz de Programación de Atención Primaria de Salud de **cualquier CESFAM** de Chile,
-alineada a la matriz oficial del Servicio de Salud (SSMSO 2026).
+alineada a la matriz oficial del Servicio de Salud.
 
 ## Qué hace
 
@@ -13,7 +13,7 @@ beneficiarios, metas, actividades a programar, horas y jornadas requeridas, y co
 brecha contra la dotación efectiva.
 
 - **Persistencia local** (localStorage) + export/import JSON para seguimiento anual.
-- **Exportación a la plantilla oficial nativa** (`.xlsx` SSMSO): carga tus datos sobre el
+- **Exportación a la plantilla oficial nativa** (`.xlsx` oficial): carga tus datos sobre el
   archivo oficial preservando fórmulas, formato, tablas y validaciones, y sus fórmulas
   recalculan toda la matriz.
 - Modo claro/oscuro, diseño alineado al Panel Metas & IAAPS.
