@@ -153,6 +153,15 @@ td.calc.warn{color:var(--aps-rojo);font-weight:600}
 .issuebox.ok{background:#e6f4ea;color:#1b5e20;border:1px solid #b6e0c2}
 .issuebox.bad{background:#fdecea;color:#8a1c1c;border:1px solid #f3c2bd}
 .issuebox ul{margin:8px 0 0;padding-left:18px}.issuebox li{margin:2px 0}
+/* Conclusión (análisis en lenguaje claro) */
+.concl{font-size:14px;line-height:1.55}
+.concl p{margin:0 0 10px}
+.concl ul{margin:0;padding-left:20px;line-height:1.65}.concl li{margin:4px 0}
+.concl-line{padding:9px 13px;border-radius:9px;margin:8px 0;font-size:13.8px}
+.concl-line.ok{background:#e6f4ea;color:#1b5e20;border:1px solid #b6e0c2}
+.concl-line.bad{background:#fdecea;color:#8a1c1c;border:1px solid #f3c2bd}
+.concl-line.neu{background:var(--s2);border:1px solid var(--line);color:var(--txt)}
+.concl-rec{margin-top:12px;padding:11px 13px;border-radius:9px;background:rgba(28,58,138,.06);border:1px solid var(--border2);font-size:13.8px}
 .tag{font-family:'DM Mono',monospace;font-size:10.5px;font-weight:500;padding:2px 9px;border-radius:20px}
 .tag.ok{background:#e6f4ea;color:#1b5e20}.tag.bad{background:#fdecea;color:#b71c1c}
 @media print{header.top,aside,.savebar,.btn,.libsearch{display:none!important}.app{grid-template-columns:1fr}main{max-width:none;padding:0}.card{break-inside:avoid}}
@@ -1056,6 +1065,52 @@ function autofillBib(idx){
 // ============================================================
 // MÓDULO REVISIÓN (semáforo + brechas + exportar)
 // ============================================================
+// Conclusión en lenguaje simple + análisis de brechas (para quien no maneja la jerga)
+function conclusionRevision(c, acts, dot, issues){
+  const req={}, disp={};
+  acts.forEach(a=>{ if(a.instrumento) req[a.instrumento]=(req[a.instrumento]||0)+computeAct(a).jor; });
+  dot.forEach(d=>{ disp[d.estamento]=(disp[d.estamento]||0)+dotEfectiva(d); });
+  const ests=[...new Set([...Object.keys(req),...Object.keys(disp)])];
+  const totReq=Object.values(req).reduce((s,x)=>s+x,0);
+  const totDisp=Object.values(disp).reduce((s,x)=>s+x,0);
+  const totActProg=acts.reduce((s,a)=>s+computeAct(a).actProg,0);
+  const nAct=acts.length;
+  const pj=n=>fmt(n,1);
+  if(!nAct && !dot.length) return `<div class="concl-line neu">Aún no cargas actividades ni dotación para <b>${escH(c.nombre)}</b>. Completa los Pasos 3 y 4 para ver la conclusión.</div>`;
+
+  const deficit=[], holgura=[], sinDot=[], sinAct=[];
+  ests.forEach(e=>{ const r=req[e]||0, dp=disp[e]||0, br=dp-r;
+    if(r>0.001 && dp<0.001) sinDot.push({e,r});
+    else if(dp>0.001 && r<0.001) sinAct.push({e,dp});
+    else if(br < -0.05) deficit.push({e,falta:-br,r,dp});
+    else if(br > 0.05) holgura.push({e,sobra:br,r,dp}); });
+
+  let h=`<div class="concl">`;
+  h+=`<p>Para <b>${escH(c.nombre)}</b> (${escH(estado.comuna)||'comuna'}, año ${estado.anio}) registraste <b>${nAct}</b> ${nAct===1?'actividad':'actividades'}, que suman <b>${totActProg.toLocaleString('es-CL')}</b> atenciones a programar en el año. Ejecutarlas requiere <b>${pj(totReq)} jornadas</b> de trabajo, y el centro dispone de <b>${pj(totDisp)} jornadas</b> efectivas.<br><small style="color:var(--sub)">(1 jornada ≈ 1 profesional a 44 horas semanales durante el año)</small></p>`;
+
+  const gb=totDisp-totReq;
+  if(totReq<0.001){ h+=`<div class="concl-line neu">Todavía no hay actividades con horas asignadas, así que no se puede evaluar la brecha. Agrega actividades en el Paso 4.</div>`; }
+  else if(gb>=0){ h+=`<div class="concl-line ok"><b>✓ En conjunto, la dotación alcanza.</b> Hay una holgura global de <b>${pj(gb)} jornadas</b>: capacidad libre para programar más o cubrir imprevistos.</div>`; }
+  else { h+=`<div class="concl-line bad"><b>⚠ En conjunto, la dotación NO alcanza.</b> Falta un total de <b>${pj(-gb)} jornadas</b> para cubrir todo lo programado.</div>`; }
+
+  const b=[];
+  deficit.forEach(d=>b.push(`<li><b>${escH(d.e)}</b>: <span style="color:var(--aps-rojo);font-weight:600">falta personal</span> — se necesitan ${pj(d.r)} y hay ${pj(d.dp)} jornadas → <b>faltan ${pj(d.falta)}</b>. Sube dotación o baja cobertura/concentración de sus actividades.</li>`));
+  sinDot.forEach(d=>b.push(`<li><b>${escH(d.e)}</b>: hay actividades programadas (${pj(d.r)} jornadas) pero <span style="color:var(--aps-rojo);font-weight:600">no cargaste su dotación</span> (Paso 3).</li>`));
+  holgura.forEach(d=>b.push(`<li><b>${escH(d.e)}</b>: <span style="color:var(--aps-verde-d);font-weight:600">tiene holgura</span> — usa ${pj(d.r)} de ${pj(d.dp)} jornadas → <b>sobran ${pj(d.sobra)}</b>. Puedes ampliar cobertura o asignarle más actividades.</li>`));
+  sinAct.forEach(d=>b.push(`<li><b>${escH(d.e)}</b>: tiene ${pj(d.dp)} jornadas disponibles pero <span style="color:var(--sub)">aún sin actividades asignadas</span>.</li>`));
+  if(b.length) h+=`<p style="margin:12px 0 4px"><b>Detalle por estamento:</b></p><ul>${b.join('')}</ul>`;
+
+  if(issues.length) h+=`<div class="concl-line bad" style="margin-top:12px">⚠ Hay <b>${issues.length}</b> ${issues.length===1?'dato que revisar':'datos que revisar'} (ver semáforo abajo); pueden estar afectando los cálculos.</div>`;
+  else h+=`<div class="concl-line ok" style="margin-top:12px">✓ Los datos están completos y consistentes.</div>`;
+
+  let rec;
+  if(totReq<0.001) rec="Comienza agregando actividades para ver el análisis.";
+  else if(gb<0 || deficit.length || sinDot.length) rec="Ajusta la dotación o la programación de los estamentos con déficit antes de exportar la matriz oficial.";
+  else if(holgura.length) rec="La programación es viable. Si quieres, aprovecha la holgura para ampliar coberturas antes de exportar.";
+  else rec="La programación está equilibrada y lista para exportar a la matriz oficial.";
+  h+=`<div class="concl-rec"><b>Recomendación:</b> ${rec}</div></div>`;
+  return h;
+}
 function viewRevision(){
   if(!estado.centros.length) return noCentro("Paso 5: Revisión","📊");
   const c=centroActivo();
@@ -1097,6 +1152,11 @@ function viewRevision(){
       <div class="kpi"><div class="kv">${totActComuna.toLocaleString('es-CL')}</div><div class="kl">Actividades a programar</div></div>
       <div class="kpi"><div class="kv">${fmt(totJorComuna,1)}</div><div class="kl">Jornadas requeridas</div></div>
     </div>
+  </div>
+  <div class="card">
+    <div class="sec-title" style="margin-top:0">📋 Conclusión — ${c.nombre}</div>
+    <div class="desc" style="margin-bottom:12px">Resumen en lenguaje claro de tu programación y del análisis de brechas.</div>
+    ${conclusionRevision(c, acts, dot, issues)}
   </div>
   <div class="card">
     <div class="sec-title" style="margin-top:0">Semáforo de datos — ${c.nombre}</div>
