@@ -143,6 +143,12 @@ td.calc.warn{color:var(--aps-rojo);font-weight:600}
 /* Dotación */
 .estcard{padding:16px 18px}
 .esthead{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.dtabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.dtab{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;border:1px solid var(--border2);background:var(--s2);color:var(--sub);font-size:12.5px;font-weight:600;cursor:pointer;transition:.15s}
+.dtab:hover{border-color:var(--navy)}
+.dtab.active{background:var(--navy);border-color:var(--navy);color:#fff}
+.dtab-dot{width:6px;height:6px;border-radius:50%;background:var(--cyan)}
+.dtab.active .dtab-dot{background:#fff}
 .esthead b{font-size:15px;color:var(--aps-verde-d)}
 .efline{margin-top:10px;font-size:13.5px;color:var(--sub)}
 .efline b{color:var(--aps-verde-d);font-size:15px;font-variant-numeric:tabular-nums}
@@ -828,29 +834,56 @@ function selCentro(c,id){
 // ============================================================
 // MÓDULO DOTACIÓN
 // ============================================================
-function ensureDot(c){ if(!Array.isArray(c.dotacion)) c.dotacion=[]; return c.dotacion; }
-function nuevaDot(est){ return {id:Date.now().toString(36),estamento:est,tne:Object.assign({},CONFIG.tneDef),personas:Object.fromEntries(CONFIG.jornadas.map(j=>[j,{a1:"",a2:"",a3:""}]))}; }
-function dotEfectiva(d){
+// 3 fuentes de dotación, fiel a la planilla oficial (Dotación Informada / Balance Dotación)
+const FUENTES=[["general","Dotación General"],["praps","PRAPS"],["comision","Comisión / Cometido"]];
+function fuenteVacia(){ return Object.fromEntries(CONFIG.jornadas.map(j=>[j,{a1:"",a2:"",a3:""}])); }
+function ensureDot(c){
+  if(!Array.isArray(c.dotacion)) c.dotacion=[];
+  c.dotacion.forEach(d=>{
+    if(!d.fuentes){ d.fuentes={ general: d.personas||fuenteVacia(), praps:fuenteVacia(), comision:fuenteVacia() }; delete d.personas; }
+    FUENTES.forEach(([k])=>{ if(!d.fuentes[k]) d.fuentes[k]=fuenteVacia(); CONFIG.jornadas.forEach(J=>{ if(!d.fuentes[k][J]) d.fuentes[k][J]={a1:"",a2:"",a3:""}; }); });
+    if(!d.tab) d.tab="general";
+  });
+  return c.dotacion;
+}
+function nuevaDot(est){ return {id:Date.now().toString(36),estamento:est,tne:Object.assign({},CONFIG.tneDef),fuentes:{general:fuenteVacia(),praps:fuenteVacia(),comision:fuenteVacia()},tab:"general"}; }
+function dotEfFuente(fuente, tne){
   let tot=0;
   CONFIG.jornadas.forEach(J=>{
-    const jeq=J/44, tne=num(d.tne[J]), fac=(J-tne)/J, p=d.personas[J]||{};
+    const jeq=J/44, t=num(tne[J]), fac=(J-t)/J, p=(fuente&&fuente[J])||{};
     tot += jeq*fac*( num(p.a1)*(45/52)+num(p.a2)*(44/52)+num(p.a3)*(43/52) );
   });
   return tot;
 }
+function dotEfDesglose(d){
+  const f=d.fuentes||{};
+  const g=dotEfFuente(f.general,d.tne), p=dotEfFuente(f.praps,d.tne), cm=dotEfFuente(f.comision,d.tne);
+  return {general:g, praps:p, comision:cm, total:g+p+cm};
+}
+function dotEfectiva(d){ return dotEfDesglose(d).total; }
 function fmt(n,dec){ return (n||0).toFixed(dec==null?2:dec).replace('.',','); }
 function dotCard(d){
+  const src=d.tab||"general";
+  const tabs=FUENTES.map(([k,lbl])=>{
+    const fk=d.fuentes[k]||{};
+    const has=CONFIG.jornadas.some(J=>{const p=fk[J]||{};return num(p.a1)||num(p.a2)||num(p.a3);});
+    return `<button class="dtab ${k===src?'active':''}" data-dtab="${d.id}" data-src="${k}">${lbl}${has?'<span class="dtab-dot"></span>':''}</button>`;
+  }).join('');
+  const f=d.fuentes[src]||{};
   const rows=CONFIG.jornadas.map(J=>{
-    const p=d.personas[J]||{a1:"",a2:"",a3:""};
+    const p=f[J]||{a1:"",a2:"",a3:""};
     return `<tr><td>${J} h</td>
-      ${['a1','a2','a3'].map(k=>`<td><input class="mini dPers" data-id="${d.id}" data-j="${J}" data-k="${k}" type="number" min="0" value="${p[k]}"></td>`).join('')}
+      ${['a1','a2','a3'].map(k=>`<td><input class="mini dPers" data-id="${d.id}" data-src="${src}" data-j="${J}" data-k="${k}" type="number" min="0" value="${p[k]}"></td>`).join('')}
       <td><input class="mini dTne" data-id="${d.id}" data-j="${J}" type="number" min="0" step="0.1" value="${d.tne[J]}"></td></tr>`;
   }).join('');
+  const de=dotEfDesglose(d);
   return `<div class="card estcard">
-    <div class="esthead"><b>${d.estamento}</b><button class="btn btn-danger" data-deldot="${d.id}" style="padding:4px 10px">Quitar</button></div>
+    <div class="esthead"><b>${escH(d.estamento)}</b><button class="btn btn-danger" data-deldot="${d.id}" style="padding:4px 10px">Quitar</button></div>
+    <div class="dtabs">${tabs}</div>
     <div style="overflow-x:auto"><table class="pobtab"><thead><tr><th>Jornada</th><th>&lt; 15 años</th><th>15-20</th><th>&gt; 20</th><th>T. no efectivo<br><small>(hrs/sem)</small></th></tr></thead>
     <tbody>${rows}</tbody></table></div>
-    <div class="efline">Dotación efectiva: <b id="dotef${d.id}">0,00</b> jornadas</div></div>`;
+    <div class="efline">Dotación efectiva: <b id="dotef${d.id}">${fmt(de.total)}</b> jornadas
+      <small style="color:var(--sub);margin-left:6px">General <b id="defG${d.id}">${fmt(de.general,1)}</b> · PRAPS <b id="defP${d.id}">${fmt(de.praps,1)}</b> · Comisión <b id="defC${d.id}">${fmt(de.comision,1)}</b></small></div></div>`;
 }
 function viewDotacion(){
   if(!estado.centros.length) return noCentro("Paso 3: Dotación","🧑‍⚕️");
@@ -859,7 +892,7 @@ function viewDotacion(){
   const disp=CONFIG.instrumentos.filter(x=>!usados.includes(x));
   return `<div class="card">
     <h2>Dotación del Centro</h2>
-    <div class="desc">Registra el personal por estamento. La herramienta calcula la <b>dotación efectiva</b> (jornadas realmente disponibles) descontando tiempo no efectivo y feriado legal por antigüedad.</div>
+    <div class="desc">Registra el personal por estamento y por <b>fuente</b> (Dotación General, PRAPS, y Comisión / Cometido), igual que la planilla oficial. La herramienta calcula la <b>dotación efectiva</b> (jornadas realmente disponibles) descontando tiempo no efectivo y feriado legal por antigüedad.</div>
     ${selCentro(c,'selCentroDot')}
     <div class="grid" style="grid-template-columns:2fr auto;align-items:end;margin-top:14px">
       <div><label class="f">Agregar estamento${tip("Tipo de profesional o técnico. Agrega uno por cada estamento presente en el centro; luego cargas cuántas personas hay por jornada y antigüedad.")}</label><select id="selAddEst">${opciones(disp,"")}</select></div>
@@ -881,7 +914,7 @@ function viewDotacion(){
 }
 function recomputeDot(){
   const c=centroActivo(); if(!c) return; const dot=ensureDot(c); let tot=0;
-  dot.forEach(d=>{ const e=dotEfectiva(d); tot+=e; set("dotef"+d.id, fmt(e)); });
+  dot.forEach(d=>{ const de=dotEfDesglose(d); tot+=de.total; set("dotef"+d.id, fmt(de.total)); set("defG"+d.id, fmt(de.general,1)); set("defP"+d.id, fmt(de.praps,1)); set("defC"+d.id, fmt(de.comision,1)); });
   set("dotTotal", fmt(tot));
 }
 function wireDotacion(){
@@ -891,7 +924,8 @@ function wireDotacion(){
   const add=document.getElementById("btnAddEst");
   if(add) add.onclick=()=>{ const est=document.getElementById("selAddEst").value; if(!est)return; dot.push(nuevaDot(est)); guardar(); render(); };
   document.querySelectorAll("[data-deldot]").forEach(b=>b.onclick=()=>{ c.dotacion=dot.filter(x=>x.id!==b.dataset.deldot); guardar(); render(); });
-  document.querySelectorAll(".dPers").forEach(inp=>inp.oninput=e=>{ const d=dot.find(x=>x.id===e.target.dataset.id); d.personas[e.target.dataset.j][e.target.dataset.k]=e.target.value; recomputeDot(); guardarDebounced(); });
+  document.querySelectorAll("[data-dtab]").forEach(b=>b.onclick=()=>{ const d=dot.find(x=>x.id===b.dataset.dtab); if(d){ d.tab=b.dataset.src; render(); } });
+  document.querySelectorAll(".dPers").forEach(inp=>inp.oninput=e=>{ const d=dot.find(x=>x.id===e.target.dataset.id); const src=e.target.dataset.src; d.fuentes[src][e.target.dataset.j][e.target.dataset.k]=e.target.value; recomputeDot(); guardarDebounced(); });
   document.querySelectorAll(".dTne").forEach(inp=>inp.oninput=e=>{ const d=dot.find(x=>x.id===e.target.dataset.id); d.tne[e.target.dataset.j]=e.target.value; recomputeDot(); guardarDebounced(); });
   recomputeDot();
 }
@@ -1236,6 +1270,8 @@ function wireRevision(){
 // ============================================================
 const OFI_SHEET={inscritos:"xl/worksheets/sheet3.xml",dias:"xl/worksheets/sheet4.xml",calcRec:"xl/worksheets/sheet7.xml",dotInf:"xl/worksheets/sheet8.xml",acciones:"xl/worksheets/sheet2.xml"};
 const OFI_JCOL={44:"D",33:"E",22:"F",11:"G"};
+// Columnas por fuente en 'Dotación Informada' (fiel al Excel: General D-G, PRAPS K-N, Comisión R-U)
+const OFI_JCOL_FUENTE={ general:{44:"D",33:"E",22:"F",11:"G"}, praps:{44:"K",33:"L",22:"M",11:"N"}, comision:{44:"R",33:"S",22:"T",11:"U"} };
 // estamento -> fila inicial (antigüedad <15) en 'Dotación Informada'
 const OFI_DIMAP={"Médico(a) General":4,"Médico(a) Familiar":9,"Médico(a) Familiar del Niño":14,"Médico(a) Familiar del Adulto":19,"Médico(a) Pediatra":24,"Médico(a) Internista":29,"Médico(a) Ginecobstetra":34,"Médico(a) Psiquiatra Infantojuvenil":39,"Médico(a) Psiquiatra Adulto":44,"Médico(a) Oftalmología":49,"Médico(a) Otorrinolaringología":54,"Odontólogo(a) General":59,"Odontólogo(a) Periodoncista":64,"Odontólogo(a) Endodoncista":69,"Odontólogo(a) Rehabilitador":74,"Químico(a) Farmacéutico(a)":79,"Enfermero(a)":84,"Matrón(a)":89,"Nutricionista":94,"Kinesiólogo(a)":99,"Psicólogo(a)":104,"Trabajadora(a) Social":109,"Terapeuta Ocupacional":114,"Fonoaudiólogo(a)":119,"Tecnólogo(a) Optometría":124,"Tecnólogo(a) Imagenología":129,"Educador(a) de Párvulos":134,"Educador(a) Diferencial":139,"Profesor(a) de Educación Física":144,"Técnico(a) en Enfermería Nivel Superior":149,"Técnico(a) en Odontología Nivel Superior":154,"Técnico(a) en Imagenología Nivel Superior":159,"Técnico(a) Social":164,"Técnico(a) Asistente de Párvulos":169,"Técnico(a) Asistente de Educación Diferencial":174,"Técnico(a) Deportivo":179,"Gestor(a) Comunitario(a)":184,"Podólogo(a)":189};
 // estamento -> fila 'Tiempo no efectivo' en 'Cálculo Recursos Disponibles'
@@ -1295,8 +1331,11 @@ async function exportExcelOficial(c){
     let s8=await zip.file(OFI_SHEET.dotInf).async("string");
     let s7=await zip.file(OFI_SHEET.calcRec).async("string");
     dot.forEach(d=>{
-      const base=OFI_DIMAP[d.estamento];
-      if(base) CONFIG.jornadas.forEach(J=>{ const col=OFI_JCOL[J], p=d.personas[J]||{}; s8=ofiSet(s8,col+base,p.a1); s8=ofiSet(s8,col+(base+1),p.a2); s8=ofiSet(s8,col+(base+2),p.a3); });
+      const base=OFI_DIMAP[d.estamento], f=d.fuentes||{};
+      if(base) ["general","praps","comision"].forEach(src=>{
+        const cols=OFI_JCOL_FUENTE[src], fu=f[src]||{};
+        CONFIG.jornadas.forEach(J=>{ const col=cols[J], p=fu[J]||{}; s8=ofiSet(s8,col+base,p.a1); s8=ofiSet(s8,col+(base+1),p.a2); s8=ofiSet(s8,col+(base+2),p.a3); });
+      });
       const tr=OFI_TNEMAP[d.estamento];
       if(tr) CONFIG.jornadas.forEach(J=>{ s7=ofiSet(s7,OFI_JCOL[J]+tr,d.tne[J]); });
     });
