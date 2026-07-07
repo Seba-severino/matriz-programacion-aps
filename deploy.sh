@@ -21,8 +21,11 @@ else
   echo "Sin cambios que commitear."
 fi
 
-# 3) Desplegar a Firebase Hosting
+# 3) Desplegar a Firebase Hosting (proyecto cvh-hub)
 firebase deploy --only hosting:matriz-aps --project cvh-hub
+
+# 4) Desplegar reglas Firestore (proyecto de datos, neutro)
+firebase deploy --only firestore:rules --project matriz-aps-datos
 
 echo ""
 echo "✔ Publicado: https://matriz-aps.web.app"
