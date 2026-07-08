@@ -2,21 +2,29 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Sincronización por CÓDIGO (sin cuentas): el id del documento ES la llave.
-    // - El código debe ser largo (no adivinable). Se prohíbe listar la colección,
-    //   así nadie puede enumerar códigos ajenos.
-    // - Solo se aceptan documentos de esta herramienta y de tamaño acotado.
+    // El id del documento ES la llave (modelo de capacidad, sin cuentas).
+    function codigoValido(code) {
+      return code is string && code.size() >= 12 && code.size() <= 128;
+    }
+    // Documento propio de la herramienta, acotado en tamaño.
+    function payloadValido(d) {
+      return d.app == "matriz-aps"
+        && d.data is string
+        && d.data.size() < 1000000                         // < 1 MB anti-abuso
+        && (!('comuna' in d) || d.comuna is string);
+    }
+
     match /matrices/{code} {
-      allow get: if code.size() >= 12;
-      allow list: if false;
-      allow create, update: if code.size() >= 12
-        && request.resource.data.app == "matriz-aps"
-        && request.resource.data.data is string
-        && request.resource.data.data.size() < 1000000;
+      allow get:    if codigoValido(code);                 // sin el código largo, nada
+      allow list:   if false;                              // no enumerable
+      allow create: if codigoValido(code) && payloadValido(request.resource.data);
+      allow update: if codigoValido(code)
+                    && payloadValido(request.resource.data)
+                    && request.resource.data.app == resource.data.app; // 'app' inmutable
       allow delete: if false;
     }
 
-    // Todo lo demás: denegado.
+    // Denegación por defecto para todo lo demás.
     match /{document=**} {
       allow read, write: if false;
     }

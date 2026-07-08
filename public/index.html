@@ -183,12 +183,60 @@ td.calc.warn{color:var(--aps-rojo);font-weight:600}
 .libitem{padding:8px 12px;border-bottom:1px solid var(--line);cursor:pointer}
 .libitem:last-child{border-bottom:none}
 .libitem:hover{background:rgba(28,58,138,.08)}
+/* Paso 4: biblioteca protagonista, esencial/avanzado, avisos inline */
+.libhero{background:linear-gradient(135deg,rgba(0,196,196,.13),rgba(28,58,138,.10));border:1px solid var(--border2);border-radius:12px;padding:16px 18px;margin-bottom:18px}
+.libhero .lh-t{font-size:14.5px;font-weight:700;color:var(--aps-verde-d);margin-bottom:3px}
+.libhero .lh-s{font-size:12.5px;color:var(--sub);margin-bottom:10px}
+.libhero input{font-size:15px;padding:11px 13px}
+.grp-lbl{display:flex;align-items:center;gap:10px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--aps-verde-d);margin:4px 0 12px}
+.grp-lbl::after{content:"";flex:1;height:1px;background:var(--line)}
+details.adv{margin-top:18px;border:1px solid var(--line);border-radius:10px;background:var(--s2)}
+details.adv>summary{cursor:pointer;padding:11px 15px;font-size:13px;font-weight:600;color:var(--txt);list-style:none;display:flex;align-items:center;gap:9px}
+details.adv>summary::-webkit-details-marker{display:none}
+details.adv>summary::before{content:"▸";color:var(--sub);transition:transform .15s}
+details.adv[open]>summary::before{transform:rotate(90deg)}
+details.adv .adv-body{padding:2px 15px 16px}
+details.adv .adv-note{font-size:12px;color:var(--sub);margin:0 0 12px}
+.fieldmsg{font-size:13px;font-weight:600;color:var(--aps-rojo);margin:6px 0 0;min-height:0}
+.pvwarn{color:var(--aps-rojo);font-weight:600}
+input.err,select.err{border-color:var(--aps-rojo)!important;box-shadow:0 0 0 3px rgba(200,40,40,.14)!important}
+/* Bienvenida / ejemplo */
+.welcome{background:linear-gradient(135deg,rgba(0,196,196,.11),rgba(28,58,138,.08));border:1px solid var(--border2)}
+.welcome ol{margin:6px 0 0;padding-left:20px;font-size:13.5px;line-height:1.75;color:var(--txt)}
+.welcome ol b{color:var(--aps-verde-d)}
+.welcome .row-btns{margin-top:15px}
 .li-ac{font-weight:600;font-size:13.5px;color:var(--txt)}
 .li-meta{font-size:11.5px;color:var(--sub);margin-top:2px}
 @media(max-width:600px){header.top .ctx{display:none}main{padding:14px;padding-bottom:64px}}
 </style>
 </head>
 <body>
+<script>
+/* Red de seguridad global: registra excepciones no controladas y avisa sin tumbar la app.
+   No silencia el error (lo loguea); solo evita que la UI quede congelada. */
+(function(){
+  function avisar(msg){
+    try{
+      var b=document.getElementById('globalErr');
+      if(!b){ b=document.createElement('div'); b.id='globalErr';
+        b.style.cssText='position:fixed;bottom:14px;left:50%;transform:translateX(-50%);z-index:9999;'+
+        'background:#8a1c1c;color:#fff;padding:10px 16px;border-radius:9px;font:600 13px system-ui,sans-serif;'+
+        'box-shadow:0 6px 24px rgba(0,0,0,.25);max-width:90vw;text-align:center';
+        b.setAttribute('role','alert'); (document.body||document.documentElement).appendChild(b); }
+      b.textContent='⚠ '+msg+' — tus datos guardados están a salvo.';
+      clearTimeout(b._t); b._t=setTimeout(function(){ if(b) b.remove(); },6000);
+    }catch(_){}
+  }
+  window.addEventListener('error', function(e){
+    console.error('[global]', (e && (e.error||e.message))||e);
+    avisar('Ocurrió un problema puntual');
+  });
+  window.addEventListener('unhandledrejection', function(e){
+    console.error('[promise]', e && e.reason);
+    avisar('Una operación no se completó');
+  });
+})();
+</script>
 <header class="top">
   <button class="hbtn" id="navBtn" onclick="toggleNav()" title="Mostrar/ocultar menú" style="margin-right:2px">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
@@ -450,6 +498,23 @@ function opciones(arr, sel){
 function viewConfig(){
   const centrosDisponibles = CONFIG.centros;
   return `
+  ${!estado.centros.length ? `
+  <div class="card welcome">
+    <h2>👋 Bienvenido/a a la Matriz de Programación APS</h2>
+    <div class="desc" style="margin-bottom:4px">Una herramienta para programar las actividades de tu centro sin pelear con Excel. Funciona en 5 pasos simples:</div>
+    <ol>
+      <li><b>Configuración</b> — elige tu comuna y agrega tus centros.</li>
+      <li><b>Población</b> — ingresa los inscritos del centro.</li>
+      <li><b>Dotación</b> — cuántos profesionales tienes por estamento.</li>
+      <li><b>Actividades</b> — busca cada actividad en la biblioteca y solo ajusta población y cobertura; los cálculos salen solos.</li>
+      <li><b>Revisión</b> — un resumen en lenguaje claro con las brechas por estamento, listo para exportar al Excel oficial.</li>
+    </ol>
+    <div class="hint" style="margin-top:14px"><span>💾</span><div>Tus datos se guardan en <b>este navegador</b>. Para no perderlos, puedes <b>Exportar respaldo</b> (más abajo) o subirlos a la <b>nube con un código</b> en cualquier momento.</div></div>
+    <div class="row-btns">
+      <button class="btn btn-p" id="btnEjemplo" type="button">👁️ Ver un ejemplo completo</button>
+      <button class="btn btn-s" id="btnEmpezar" type="button">Empezar de cero ↓</button>
+    </div>
+  </div>` : ''}
   <div class="card">
     <h2>Configuración de la Comuna</h2>
     <div class="desc">El directivo comunal define aquí los datos base. Todo lo que registres se guarda en tu navegador y puedes exportarlo como respaldo para el año siguiente.</div>
@@ -553,6 +618,31 @@ function viewPlaceholder(id){
   </div></div>`;
 }
 
+// Carga un centro de ejemplo completo para que el usuario vea el flujo funcionando
+function cargarEjemplo(){
+  if(estado.centros.length && !confirm("Esto reemplazará tus datos actuales por un ejemplo de demostración. ¿Continuar?")) return;
+  estado=nuevoEstado();
+  estado.comuna="Puente Alto";
+  const c={id:"ej"+Date.now().toString(36), nombre:"CESFAM Ejemplo", sectores:2};
+  estado.centros=[c]; centroSel=c.id;
+  // Población (algunos grupos representativos)
+  const pob=ensurePob(c);
+  const setIV=(i,a,f)=>{ if(pob.iv[i]){ pob.iv[i].a=a; pob.iv[i].f=f; } };
+  setIV(0,320,156); setIV(15,2100,1060); setIV(16,2500,1270);
+  setIV(18,2400,1230); setIV(19,2300,1180); setIV(24,1900,980);
+  // Dotación (3 médicos + 4 enfermeras, jornada 44h, antigüedad <15)
+  const dot=ensureDot(c);
+  const dMed=nuevaDot("Médico(a) General"); dMed.fuentes.general[44].a1=3; dot.push(dMed);
+  const dEnf=nuevaDot("Enfermero(a)");      dEnf.fuentes.general[44].a1=4; dot.push(dEnf);
+  // Actividades de ejemplo
+  const acts=ensureAct(c);
+  const mk=o=>Object.assign(blankAct(),{id:Date.now().toString(36)+Math.random().toString(36).slice(2,6)},o);
+  acts.push(mk({actividad:"Control de salud cardiovascular", prestacion:"Salud Cardiovascular", instrumento:"Médico(a) General", inscritos:"5000", prev:"45", cob:"80", conc:"4", part:"1", ajuste:"15", rend:"3"}));
+  acts.push(mk({actividad:"Control de salud infantil",       prestacion:"Supervisión de Salud Integral", instrumento:"Enfermero(a)", inscritos:"320", prev:"100", cob:"90", conc:"6", part:"1", ajuste:"15", rend:"4"}));
+  acts.forEach(a=>aplicarPrestacion(a,true));
+  guardar(); irA('revision');
+}
+
 // ============================================================
 // EVENTOS
 // ============================================================
@@ -563,6 +653,9 @@ function wireConfig(){
   const an=g("fAnio"); if(an) an.oninput=e=>{estado.anio=parseInt(e.target.value)||"";guardarDebounced();};
   const fe=g("fFeriados"); if(fe) fe.oninput=e=>{estado.feriadosLegales=parseFloat(e.target.value)||0;guardarDebounced();};
   document.querySelectorAll(".fDia").forEach(inp=>inp.oninput=e=>{estado.dias[e.target.dataset.k]=parseFloat(e.target.value)||0;guardarDebounced();});
+
+  const ej=g("btnEjemplo"); if(ej) ej.onclick=cargarEjemplo;
+  const emp=g("btnEmpezar"); if(emp) emp.onclick=()=>{ const f=g("fComuna"); if(f){ f.focus(); f.scrollIntoView({block:"center",behavior:"smooth"}); } };
 
   const add=g("btnAddCentro");
   if(add) add.onclick=()=>{
@@ -937,6 +1030,7 @@ function wireDotacion(){
 // MÓDULO ACTIVIDADES
 // ============================================================
 let actDraft=null;
+let actAdvOpen=false;   // recuerda si el panel "Ajustes avanzados" está abierto entre re-renders
 // ── Catálogo nacional Metas/IAAPS 2026 (fuente SARS/MINSAL) + ruta REM e indicador por prestación ──
 const CATALOGO_IND=["Meta I","Meta II","Meta IIIa","Meta IIIb","Meta IVa","Meta IVb","Meta V","Meta VI","Meta VII","Meta VIII","IAAPS 1","IAAPS 2.1","IAAPS 2.2","IAAPS 3","IAAPS 4","IAAPS 5","IAAPS 6.1a","IAAPS 6.1b","IAAPS 6.2","IAAPS 7","IAAPS 8","IAAPS 9.1","IAAPS 9.2","IAAPS 9.3","IAAPS 10","IAAPS 11","IAAPS 12","IAAPS 13","IAAPS 14","IAAPS 15","IAAPS 16","IAAPS 17","IAAPS 18","IAAPS 19"];
 const RUTA_REM={
@@ -1012,46 +1106,65 @@ function viewActividades(){
   const totAct = acts.reduce((s,a)=>s+computeAct(a).actProg,0);
   return `<div class="card">
     <h2>Actividades del Centro</h2>
-    <div class="desc">Captura guiada: eliges de listas (sin errores de tipeo) y la herramienta calcula beneficiados, meta, actividades a programar y jornadas requeridas. Días hábiles del año <b>${estado.anio}</b>: <b>${diasProgramarComuna()}</b>.</div>
+    <div class="desc">Agrega cada actividad del centro. Lo más simple: <b>búscala en la biblioteca</b> y solo ajusta población y cobertura; la herramienta calcula sola la meta y las jornadas necesarias. Días hábiles del año <b>${estado.anio}</b>: <b>${diasProgramarComuna()}</b>.</div>
     ${selCentro(c,'selCentroAct')}
   </div>
   <div class="card">
     <div class="sec-title" style="margin-top:0">Nueva actividad</div>
-    <div class="libsearch">
-      <label class="f">🔎 Buscar en la biblioteca oficial <small>(${BIBLIOTECA.length} actividades normadas — autocompleta prevalencia, concentración, rendimiento e instrumento)</small></label>
-      <input id="aBusca" type="text" placeholder="Ej: control cardiovascular, diada, EMPAM, taller…" autocomplete="off">
+
+    <!-- 1) Biblioteca protagonista: la vía recomendada -->
+    <div class="libhero">
+      <div class="lh-t">🔎 Busca tu actividad y completamos todo por ti</div>
+      <div class="lh-s">Escribe el nombre (ej. control cardiovascular, EMPAM, taller) y elígela de la lista: la herramienta rellena prevalencia, concentración, rendimiento e instrumento desde la biblioteca oficial (${BIBLIOTECA.length} actividades normadas). Luego solo ajustas población y cobertura.</div>
+      <input id="aBusca" type="text" placeholder="Escribe aquí para buscar…" autocomplete="off">
       <div id="aResult" class="libresult"></div>
     </div>
+
+    <!-- 2) Lo esencial: pocos campos, siempre visibles -->
+    <div class="grp-lbl">Lo esencial</div>
     <div class="grid">
-      <div><label class="f">Tipo de cálculo${tip("Por población: la meta se calcula desde inscritos × prevalencia × cobertura. Meta directa: para actividades operativas o de gestión, tú ingresas la meta anual.")}</label><select id="aModo"><option value="pob" ${d.modo!=='directa'?'selected':''}>Por población</option><option value="directa" ${d.modo==='directa'?'selected':''}>Meta directa (operativas/gestión)</option></select></div>
-      <div><label class="f">Prestación / Programa${tip("Programa o línea de acción al que pertenece la actividad. Define la ruta REM y el indicador sugeridos.")}</label><select id="aPrest">${opciones(CONFIG.prestaciones,d.prestacion)}</select></div>
-      <div><label class="f">Actividad${tip("Nombre de la actividad tal como se programa (ej. Control de salud cardiovascular). Puedes buscarla en la biblioteca oficial de arriba.")}</label><input id="aAct" type="text" value="${escH(d.actividad)}" placeholder="Ej. Control de salud infantil"></div>
-      <div><label class="f">Ruta REM <small>(auto · editable)</small>${tip("Sección del REM donde se reporta esta actividad. Se autocompleta según la prestación; ajústala si corresponde.")}</label><input id="aRem" type="text" value="${escH(d.rem)}" placeholder="Ej. REM A03"></div>
-      <div><label class="f">Indicador asociado <small>(Meta/IAAPS)</small>${tip("Meta Sanitaria o IAAPS que esta actividad ayuda a cumplir. Opcional; conecta la programación con el Panel Metas & IAAPS.")}</label><select id="aInd"><option value="">— ninguno —</option>${CATALOGO_IND.map(x=>`<option ${x===d.indicador?'selected':''}>${x}</option>`).join('')}</select></div>
-      <div><label class="f">Dedicación${tip("Asistencial: atención directa a personas. Operativa: gestión, apoyo o actividades no clínicas.")}</label><select id="aDed">${opciones(CONFIG.dedicacion,d.dedicacion)}</select></div>
-      <div><label class="f">Instrumento (estamento)${tip("Profesional o técnico que ejecuta la actividad (médico, enfermera, matrona, TENS, etc.).")}</label><select id="aInst">${opciones(CONFIG.instrumentos,d.instrumento)}</select></div>
-      <div><label class="f">Recurso Físico${tip("Espacio físico donde se realiza la actividad (box, sala, etc.). Alimenta el Balance de Recursos Físicos. Se autocompleta desde la biblioteca.")}</label><select id="aRF"><option value="">— seleccionar —</option>${CONFIG.recursosFisicos.map(x=>`<option ${x===d.recursoFisico?'selected':''}>${escH(x)}</option>`).join('')}</select></div>
-      <div><label class="f">Recurso Tecnológico${tip("Tecnología asociada (telesalud, etc.). Opcional; en la mayoría de las actividades es 'Ninguno'.")}</label><select id="aRT"><option value="">— seleccionar —</option>${CONFIG.recursosTecnologicos.map(x=>`<option ${x===d.recursoTec?'selected':''}>${escH(x)}</option>`).join('')}</select></div>
-      <div><label class="f">Distribución por instrumento <small>%</small>${tip("Porcentaje de las actividades que realiza este instrumento. Usa menos de 100% si la actividad se reparte entre varios estamentos.")}</label><input id="aDist" type="number" min="0" max="100" step="5" value="${d.distrib}"></div>
+      <div><label class="f">Nombre de la actividad${tip("Nombre de la actividad tal como se programa (ej. Control de salud cardiovascular). Lo más fácil es buscarla en la biblioteca de arriba.")}</label><input id="aAct" type="text" value="${escH(d.actividad)}" placeholder="Ej. Control de salud infantil"></div>
+      <div><label class="f">Programa al que pertenece <small>(prestación)</small>${tip("Programa o línea de acción al que pertenece la actividad. Define la ruta REM y el indicador sugeridos.")}</label><select id="aPrest">${opciones(CONFIG.prestaciones,d.prestacion)}</select></div>
+      <div><label class="f">¿Quién la realiza? <small>(instrumento)</small>${tip("Profesional o técnico que ejecuta la actividad (médico, enfermera, matrona, TENS, etc.).")}</label><select id="aInst">${opciones(CONFIG.instrumentos,d.instrumento)}</select></div>
       ${ d.modo==='directa'
-        ? `<div><label class="f">Meta de actividades / año <small>(directa)</small>${tip("Número total de actividades a realizar en el año. Lo defines tú directamente (no se calcula desde población).")}</label><input id="aMetaD" type="number" min="0" value="${d.metaDirecta}"></div>`
-        : `<div><label class="f">N° inscritos grupo${tip("Población del grupo objetivo de esta actividad. Puedes traerla del Paso 2 (Población) con el campo de abajo.")}</label><input id="aIns" type="number" min="0" value="${d.inscritos}"></div>
-      <div><label class="f">↳ tomar de Población${tip("Trae automáticamente un valor de inscritos ya cargado en el Paso 2 (evita reingresar y errores de tipeo).")}</label><select id="aInsPob"><option value="">— usar valor manual —</option>${opcionesPoblacion(c).map(o=>`<option value="${o[1]}">${escH(o[0])} (${o[1]})</option>`).join('')}</select></div>
-      <div><label class="f">Prevalencia <small>%</small>${tip("Porcentaje de la población que presenta la condición o necesidad. Usa 100% si la actividad aplica a todo el grupo.")}</label><input id="aPrev" type="number" min="0" max="100" step="0.1" value="${d.prev}"></div>
-      <div><label class="f">Cobertura <small>%</small>${tip("Porcentaje de la población objetivo que planeas atender durante el año.")}</label><input id="aCob" type="number" min="0" max="100" step="0.1" value="${d.cob}"></div>
-      <div><label class="f">Concentración <small>(veces/año)</small>${tip("Número de veces al año que cada persona recibe esta actividad (ej. 4 controles anuales).")}</label><input id="aConc" type="number" min="0" step="0.1" value="${d.conc}"></div>
-      <div><label class="f">Participantes por actividad${tip("Personas atendidas en cada actividad. 1 en atenciones individuales; más de 1 en talleres o actividades grupales.")}</label><input id="aPart" type="number" min="1" value="${d.part}"></div>` }
-      <div><label class="f">Factor de ajuste <small>% (inasistencia)</small>${tip("Porcentaje extra de actividades para cubrir inasistencias (NSP). Habitualmente ~15%.")}</label><input id="aAj" type="number" min="0" step="1" value="${d.ajuste}"></div>
-      <div><label class="f">Rendimiento <small>(act/hora)</small>${tip("Cuántas atenciones se realizan por hora. Si no lo sabes, usa 'duración en minutos' y se calcula solo (60 ÷ minutos).")}</label><input id="aRend" type="number" min="0" step="0.01" value="${d.rend}"></div>
-      <div><label class="f">↳ o duración en minutos <small>(calcula rendimiento)</small>${tip("Minutos que dura cada atención. La herramienta calcula el rendimiento = 60 ÷ minutos automáticamente.")}</label><input id="aMin" type="number" min="0" placeholder="ej. 20"></div>
+        ? `<div><label class="f">¿Cuántas actividades al año? <small>(meta directa)</small>${tip("Número total de actividades a realizar en el año. Lo defines tú directamente (no se calcula desde población).")}</label><input id="aMetaD" type="number" min="0" value="${d.metaDirecta}"></div>`
+        : `<div><label class="f">¿A cuántas personas? <small>(inscritos del grupo)</small>${tip("Población del grupo objetivo de esta actividad. Puedes traerla del Paso 2 (Población) con el campo de abajo.")}</label><input id="aIns" type="number" min="0" value="${d.inscritos}"></div>
+      <div><label class="f">↳ o traer del Paso 2 <small>(Población)</small>${tip("Trae automáticamente un valor de inscritos ya cargado en el Paso 2 (evita reingresar y errores de tipeo).")}</label><select id="aInsPob"><option value="">— usar valor manual —</option>${opcionesPoblacion(c).map(o=>`<option value="${o[1]}">${escH(o[0])} (${o[1]})</option>`).join('')}</select></div>
+      <div><label class="f">¿A qué % llegarás este año? <small>(cobertura)</small>${tip("Porcentaje de la población objetivo que planeas atender durante el año.")}</label><input id="aCob" type="number" min="0" max="100" step="0.1" value="${d.cob}"></div>
+      <div><label class="f">¿Cuántas veces al año por persona? <small>(concentración)</small>${tip("Número de veces al año que cada persona recibe esta actividad (ej. 4 controles anuales).")}</label><input id="aConc" type="number" min="0" step="0.1" value="${d.conc}"></div>` }
+      <div><label class="f">¿Cuántas atenciones por hora? <small>(rendimiento)</small>${tip("Cuántas atenciones se realizan por hora. Si no lo sabes, usa 'duración en minutos' y se calcula solo (60 ÷ minutos).")}</label><input id="aRend" type="number" min="0" step="0.01" value="${d.rend}" placeholder="ej. 3"></div>
+      <div><label class="f">↳ o ¿cuántos minutos dura? <small>(calcula lo anterior)</small>${tip("Minutos que dura cada atención. La herramienta calcula el rendimiento = 60 ÷ minutos automáticamente.")}</label><input id="aMin" type="number" min="0" placeholder="ej. 20"></div>
     </div>
+
+    <!-- 3) Ajustes avanzados: plegados por defecto -->
+    <details class="adv" id="advAct" ${actAdvOpen?'open':''}>
+      <summary>Ajustes avanzados (opcional) — la mayoría ya vienen con un valor recomendado</summary>
+      <div class="adv-body">
+        <p class="adv-note">Estos campos ya traen un valor razonable. Cámbialos solo si tu caso lo requiere.</p>
+        <div class="grid">
+          <div><label class="f">Tipo de cálculo${tip("Por población: la meta se calcula desde inscritos × prevalencia × cobertura (lo habitual). Meta directa: para actividades operativas o de gestión, tú ingresas la meta anual.")}</label><select id="aModo"><option value="pob" ${d.modo!=='directa'?'selected':''}>Por población (habitual)</option><option value="directa" ${d.modo==='directa'?'selected':''}>Meta directa (operativas/gestión)</option></select></div>
+          ${ d.modo==='directa' ? '' : `<div><label class="f">Prevalencia <small>%</small>${tip("Porcentaje de la población que presenta la condición o necesidad. Usa 100% si la actividad aplica a todo el grupo.")}</label><input id="aPrev" type="number" min="0" max="100" step="0.1" value="${d.prev}"></div>
+          <div><label class="f">Participantes por actividad${tip("Personas atendidas en cada actividad. 1 en atenciones individuales; más de 1 en talleres o actividades grupales.")}</label><input id="aPart" type="number" min="1" value="${d.part}"></div>` }
+          <div><label class="f">Extra por inasistencias <small>% (factor de ajuste)</small>${tip("Porcentaje extra de actividades para cubrir inasistencias (NSP). Habitualmente ~15%.")}</label><input id="aAj" type="number" min="0" step="1" value="${d.ajuste}"></div>
+          <div><label class="f">Si la reparten varios profesionales <small>% (distribución)</small>${tip("Porcentaje de las actividades que realiza este instrumento. Usa menos de 100% si la actividad se reparte entre varios estamentos.")}</label><input id="aDist" type="number" min="0" max="100" step="5" value="${d.distrib}"></div>
+          <div><label class="f">Tipo de atención <small>(dedicación)</small>${tip("Asistencial: atención directa a personas. Operativa: gestión, apoyo o actividades no clínicas.")}</label><select id="aDed">${opciones(CONFIG.dedicacion,d.dedicacion)}</select></div>
+          <div><label class="f">Dónde se realiza <small>(recurso físico)</small>${tip("Espacio físico donde se realiza la actividad (box, sala, etc.). Alimenta el Balance de Recursos Físicos. Se autocompleta desde la biblioteca.")}</label><select id="aRF"><option value="">— seleccionar —</option>${CONFIG.recursosFisicos.map(x=>`<option ${x===d.recursoFisico?'selected':''}>${escH(x)}</option>`).join('')}</select></div>
+          <div><label class="f">Recurso tecnológico${tip("Tecnología asociada (telesalud, etc.). Opcional; en la mayoría de las actividades es 'Ninguno'.")}</label><select id="aRT"><option value="">— seleccionar —</option>${CONFIG.recursosTecnologicos.map(x=>`<option ${x===d.recursoTec?'selected':''}>${escH(x)}</option>`).join('')}</select></div>
+          <div><label class="f">Ruta REM <small>(auto · editable)</small>${tip("Sección del REM donde se reporta esta actividad. Se autocompleta según la prestación; ajústala si corresponde.")}</label><input id="aRem" type="text" value="${escH(d.rem)}" placeholder="Ej. REM A03"></div>
+          <div><label class="f">Indicador asociado <small>(Meta/IAAPS)</small>${tip("Meta Sanitaria o IAAPS que esta actividad ayuda a cumplir. Opcional; conecta la programación con el Panel Metas & IAAPS.")}</label><select id="aInd"><option value="">— ninguno —</option>${CATALOGO_IND.map(x=>`<option ${x===d.indicador?'selected':''}>${x}</option>`).join('')}</select></div>
+        </div>
+      </div>
+    </details>
+
     <div class="preview">
       <span>${d.modo==='directa'?'Meta':'Beneficiados'}: <b id="pvBenef">${cp.benef!=null?cp.benef:cp.meta}</b></span>
       <span>Meta actividades: <b id="pvMeta">${cp.meta}</b></span>
       <span>A programar: <b id="pvAct">${cp.actProg}</b></span>
       <span>Meta × instrumento: <b id="pvMI">${cp.metaInstr}</b></span>
       <span>Jornadas: <b id="pvJor">${fmt(cp.jor)}</b></span>
+      <span id="pvWarn" class="pvwarn" style="${num(d.rend)>0?'display:none':''}">⚠ Falta indicar cuántas atenciones por hora (o los minutos) → aún no puedo calcular jornadas.</span>
     </div>
+    <div id="actMsg" class="fieldmsg"></div>
     <div class="row-btns"><button class="btn btn-p" id="btnAddAct">＋ Agregar actividad</button>
       <button class="btn btn-s" id="btnClearAct">Limpiar</button></div>
   </div>
@@ -1070,6 +1183,13 @@ function viewActividades(){
 function recomputeActPreview(){
   const cp=computeAct(actDraft);
   set("pvBenef",cp.benef!=null?cp.benef:cp.meta); set("pvMeta",cp.meta); set("pvAct",cp.actProg); set("pvMI",cp.metaInstr); set("pvJor",fmt(cp.jor));
+  const w=document.getElementById("pvWarn"); if(w) w.style.display = num(actDraft.rend)>0 ? "none" : "";
+}
+// Aviso inline bajo el formulario (reemplaza los alert() de validación)
+function actAviso(msg, campoId){
+  const box=document.getElementById("actMsg"); if(box) box.textContent=msg||"";
+  document.querySelectorAll("#advAct .err, .card .err").forEach(el=>el.classList.remove("err"));
+  if(campoId){ const el=document.getElementById(campoId); if(el){ el.classList.add("err"); el.focus(); el.scrollIntoView({block:"center",behavior:"smooth"}); } }
 }
 function wireActividades(){
   if(pasoActual!=="actividades"||!estado.centros.length) return;
@@ -1084,18 +1204,21 @@ function wireActividades(){
   const rf=document.getElementById("aRF"); if(rf) rf.onchange=e=>{ actDraft.recursoFisico=e.target.value; };
   const rt=document.getElementById("aRT"); if(rt) rt.onchange=e=>{ actDraft.recursoTec=e.target.value; };
   const modo=document.getElementById("aModo"); if(modo) modo.onchange=e=>{ actDraft.modo=e.target.value; render(); };
+  const adv=document.getElementById("advAct"); if(adv) adv.ontoggle=()=>{ actAdvOpen=adv.open; };
   const insPob=document.getElementById("aInsPob"); if(insPob) insPob.onchange=e=>{ if(e.target.value!==""){ actDraft.inscritos=e.target.value; const ai=document.getElementById("aIns"); if(ai)ai.value=e.target.value; recomputeActPreview(); } };
   const min=document.getElementById("aMin");
   if(min) min.oninput=e=>{ const m=num(e.target.value); if(m>0){ actDraft.rend=(60/m).toFixed(2); const r=document.getElementById("aRend"); if(r)r.value=actDraft.rend; recomputeActPreview(); } };
   const add=document.getElementById("btnAddAct");
   if(add) add.onclick=()=>{
-    if(!actDraft.actividad.trim()){ alert("Escribe el nombre de la actividad."); return; }
-    if(!actDraft.prestacion){ alert("Selecciona la prestación."); return; }
-    if(!actDraft.instrumento){ alert("Selecciona el instrumento."); return; }
+    if(!actDraft.actividad.trim()){ actAviso("Escribe el nombre de la actividad (o búscala en la biblioteca de arriba).","aAct"); return; }
+    if(!actDraft.prestacion){ actAviso("Elige el programa al que pertenece.","aPrest"); return; }
+    if(!actDraft.instrumento){ actAviso("Indica quién realiza la actividad.","aInst"); return; }
+    if(!(num(actDraft.rend)>0)){ actAviso("Indica cuántas atenciones por hora (o los minutos que dura) para poder calcular las jornadas.","aRend"); return; }
+    actAviso("");
     acts.push(Object.assign({id:Date.now().toString(36)},actDraft));
-    actDraft=blankAct(); guardar(); render();
+    actDraft=blankAct(); actAdvOpen=false; guardar(); render();
   };
-  const clr=document.getElementById("btnClearAct"); if(clr) clr.onclick=()=>{ actDraft=blankAct(); render(); };
+  const clr=document.getElementById("btnClearAct"); if(clr) clr.onclick=()=>{ actDraft=blankAct(); actAdvOpen=false; render(); };
   document.querySelectorAll("[data-delact]").forEach(b=>b.onclick=()=>{ c.actividades=acts.filter(x=>x.id!==b.dataset.delact); guardar(); render(); });
   const busca=document.getElementById("aBusca");
   if(busca){ busca.oninput=e=>renderLibResultados(e.target.value); busca.focus(); }

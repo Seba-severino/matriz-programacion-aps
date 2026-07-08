@@ -13,9 +13,9 @@ beneficiarios, metas, actividades a programar, horas y jornadas requeridas, y co
 brecha contra la dotación efectiva.
 
 - **Persistencia local** (localStorage) + export/import JSON para seguimiento anual.
-- **Exportación a la plantilla oficial nativa** (`.xlsx` oficial): carga tus datos sobre el
-  archivo oficial preservando fórmulas, formato, tablas y validaciones, y sus fórmulas
-  recalculan toda la matriz.
+- **Sincronización opcional en la nube por código** (sin cuentas): el código es la llave.
+- **Exportación a la plantilla oficial nativa** (`.xlsx`): escribe tus datos sobre el archivo
+  oficial preservando fórmulas, formato, tablas y validaciones.
 - Modo claro/oscuro, diseño alineado al Panel Metas & IAAPS.
 
 ## Uso
@@ -23,10 +23,19 @@ brecha contra la dotación efectiva.
 Abre `matriz-programacion-aps.html` en cualquier navegador, o visita el sitio publicado.
 No requiere instalación ni conexión (funciona 100% offline).
 
+## Privacidad y datos
+
+La herramienta **no almacena datos identificables de pacientes**: solo trabaja con conteos
+agregados de población, dotación y metas. Los datos se guardan en el navegador del usuario
+(localStorage) y, opcionalmente, en la nube bajo un **código privado** que actúa como llave.
+Sin ese código no es posible leer ni enumerar los datos.
+
 ## Publicación
 
-Sitio estático en Firebase Hosting (proyecto `cvh-hub`, sitio `matriz-aps`).
+Un único script sincroniza el HTML, versiona en GitHub y despliega Hosting + reglas Firestore:
 
 ```bash
-firebase deploy --only hosting:matriz-aps
+./deploy.sh "mensaje de commit"
+# Hosting: proyecto cvh-hub, sitio matriz-aps  ->  https://matriz-aps.web.app
+# Reglas Firestore: proyecto matriz-aps-datos
 ```
