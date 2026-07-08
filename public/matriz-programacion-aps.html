@@ -207,7 +207,79 @@ input.err,select.err{border-color:var(--aps-rojo)!important;box-shadow:0 0 0 3px
 .welcome .row-btns{margin-top:15px}
 .li-ac{font-weight:600;font-size:13.5px;color:var(--txt)}
 .li-meta{font-size:11.5px;color:var(--sub);margin-top:2px}
+/* Formulario de actividades: alinea los campos aunque los rótulos ocupen 1 o 2 líneas */
+.actgrid{gap:16px 16px}
+.actgrid>div{display:flex;flex-direction:column;min-width:0}
+.actgrid>div>label.f{line-height:1.35;margin-bottom:7px}
+.actgrid>div>input,.actgrid>div>select{margin-top:auto}          /* empuja el campo al fondo de la fila */
+label.f .sub{color:var(--sub);font-weight:400}                    /* aclaración (prestación/instrumento) más discreta */
+label.f .tip{vertical-align:baseline}
 @media(max-width:600px){header.top .ctx{display:none}main{padding:14px;padding-bottom:64px}}
+
+/* ============================================================
+   CAPA DE REFINAMIENTO VISUAL (solo estética; no cambia estructura ni lógica)
+   ============================================================ */
+:root{
+  --sh:0 1px 2px rgba(28,58,138,.05), 0 8px 24px rgba(28,58,138,.07);
+  --shl:0 12px 40px rgba(28,58,138,.16);
+  --ring:0 0 0 3px rgba(28,58,138,.16);
+}
+html[data-theme="dark"]{
+  --sh:0 1px 2px rgba(0,0,0,.35), 0 10px 30px rgba(0,0,0,.45);
+  --shl:0 16px 48px rgba(0,0,0,.55);
+  --ring:0 0 0 3px rgba(90,130,230,.30);
+}
+/* Fondo con una sutil profundidad */
+body{background:radial-gradient(1200px 600px at 100% -5%, color-mix(in srgb, var(--navy) 7%, var(--bg)), var(--bg) 60%) fixed, var(--bg)}
+
+/* Tarjetas: más redondez, aire y una sombra en capas más elegante */
+.card{border-radius:18px;padding:26px;border-color:var(--line);box-shadow:var(--sh)}
+.card h2{font-size:19px;font-weight:700;letter-spacing:-.012em;line-height:1.25}
+.card .desc{font-size:13.5px;line-height:1.55}
+
+/* Títulos de sección: acento de color en vez de subrayado (más moderno, menos "técnico") */
+.sec-title{border-bottom:none;padding-bottom:0;margin-top:26px;display:flex;align-items:center;gap:9px;
+  color:var(--sub);font-size:11px;letter-spacing:.12em}
+.sec-title::before{content:"";width:16px;height:3px;border-radius:3px;
+  background:linear-gradient(90deg,var(--navy),var(--cyan));flex-shrink:0}
+
+/* Inputs y selects: fondo limpio, borde nítido, foco definido, chevron propio */
+input,select,textarea{background:var(--card);border:1.5px solid var(--line);border-radius:11px;padding:10px 13px;font-size:14px;transition:border-color .15s, box-shadow .15s, background .15s}
+input::placeholder,textarea::placeholder{color:var(--muted2)}
+input:hover:not(:focus),select:hover:not(:focus),textarea:hover:not(:focus){border-color:var(--border2)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--navy);box-shadow:var(--ring)}
+select{appearance:none;-webkit-appearance:none;-moz-appearance:none;padding-right:36px;cursor:pointer;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23627099' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+  background-repeat:no-repeat;background-position:right 13px center;background-size:12px}
+html[data-theme="dark"] select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%237a90b8' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>")}
+
+/* Botones: radio consistente, elevación sutil y micro-interacción al pasar/pulsar */
+.btn{border-radius:11px;padding:10px 18px;box-shadow:0 1px 2px rgba(28,58,138,.08)}
+.btn:active{transform:translateY(.5px)}
+.btn-p{box-shadow:0 2px 10px rgba(28,58,138,.24)}
+.btn-p:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(28,58,138,.30)}
+.btn-a:hover{transform:translateY(-1px)}
+
+/* KPIs con un poco más de cuerpo y borde de acento */
+.kpi{border-radius:16px;padding:18px 16px;box-shadow:var(--sh);border-color:var(--line);position:relative;overflow:hidden}
+.kpi::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--navy),var(--cyan))}
+.kpi .kv{font-size:28px;letter-spacing:-.01em}
+
+/* Cabecera: hairline superior interno para dar relieve */
+header.top{box-shadow:inset 0 1px 0 rgba(255,255,255,.10), 0 4px 22px rgba(28,58,138,.34)}
+
+/* Foco visible para accesibilidad en elementos interactivos no-form */
+.btn:focus-visible,.nitem:focus-visible,.dtab:focus-visible,summary:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+
+/* Modo oscuro: cuadros semánticos con tintes translúcidos (evita parches claros) */
+html[data-theme="dark"] .hint{background:rgba(255,176,77,.10);border-color:rgba(255,176,77,.28);color:#ffcf94}
+html[data-theme="dark"] .concl-line.ok,html[data-theme="dark"] .issuebox.ok{background:rgba(70,200,120,.12);border-color:rgba(70,200,120,.32);color:#8fe0a8}
+html[data-theme="dark"] .concl-line.bad,html[data-theme="dark"] .issuebox.bad{background:rgba(255,120,110,.12);border-color:rgba(255,120,110,.34);color:#ffb0a6}
+html[data-theme="dark"] .concl-line.neu{background:var(--s2);border-color:var(--line);color:var(--txt)}
+html[data-theme="dark"] .concl-rec{background:rgba(90,130,230,.12);border-color:var(--border2)}
+html[data-theme="dark"] .tag.ok{background:rgba(70,200,120,.18);color:#8fe0a8}
+html[data-theme="dark"] .tag.bad{background:rgba(255,120,110,.18);color:#ffb0a6}
+html[data-theme="dark"] .fieldmsg,html[data-theme="dark"] .pvwarn{color:#ff9082}
 </style>
 </head>
 <body>
@@ -532,7 +604,7 @@ function viewConfig(){
     </div>
 
     <div class="sec-title">Días a programar <small style="text-transform:none;letter-spacing:0;font-weight:400">— parámetros comunales (se restan al año calendario)</small></div>
-    <div class="grid">
+    <div class="grid actgrid">
       <div>
         <label class="f">Feriados legales del año <small>(de carácter general)</small>${tip("Feriados legales de carácter general del país en el año. Los sábados y domingos los descuenta la herramienta sola.")}</label>
         <input id="fFeriados" type="number" min="0" step="0.5" value="${estado.feriadosLegales}">
@@ -1122,7 +1194,7 @@ function viewActividades(){
 
     <!-- 2) Lo esencial: pocos campos, siempre visibles -->
     <div class="grp-lbl">Lo esencial</div>
-    <div class="grid">
+    <div class="grid actgrid">
       <div><label class="f">Nombre de la actividad${tip("Nombre de la actividad tal como se programa (ej. Control de salud cardiovascular). Lo más fácil es buscarla en la biblioteca de arriba.")}</label><input id="aAct" type="text" value="${escH(d.actividad)}" placeholder="Ej. Control de salud infantil"></div>
       <div><label class="f">Programa al que pertenece <small>(prestación)</small>${tip("Programa o línea de acción al que pertenece la actividad. Define la ruta REM y el indicador sugeridos.")}</label><select id="aPrest">${opciones(CONFIG.prestaciones,d.prestacion)}</select></div>
       <div><label class="f">¿Quién la realiza? <small>(instrumento)</small>${tip("Profesional o técnico que ejecuta la actividad (médico, enfermera, matrona, TENS, etc.).")}</label><select id="aInst">${opciones(CONFIG.instrumentos,d.instrumento)}</select></div>
@@ -1141,7 +1213,7 @@ function viewActividades(){
       <summary>Ajustes avanzados (opcional) — la mayoría ya vienen con un valor recomendado</summary>
       <div class="adv-body">
         <p class="adv-note">Estos campos ya traen un valor razonable. Cámbialos solo si tu caso lo requiere.</p>
-        <div class="grid">
+        <div class="grid actgrid">
           <div><label class="f">Tipo de cálculo${tip("Por población: la meta se calcula desde inscritos × prevalencia × cobertura (lo habitual). Meta directa: para actividades operativas o de gestión, tú ingresas la meta anual.")}</label><select id="aModo"><option value="pob" ${d.modo!=='directa'?'selected':''}>Por población (habitual)</option><option value="directa" ${d.modo==='directa'?'selected':''}>Meta directa (operativas/gestión)</option></select></div>
           ${ d.modo==='directa' ? '' : `<div><label class="f">Prevalencia <small>%</small>${tip("Porcentaje de la población que presenta la condición o necesidad. Usa 100% si la actividad aplica a todo el grupo.")}</label><input id="aPrev" type="number" min="0" max="100" step="0.1" value="${d.prev}"></div>
           <div><label class="f">Participantes por actividad${tip("Personas atendidas en cada actividad. 1 en atenciones individuales; más de 1 en talleres o actividades grupales.")}</label><input id="aPart" type="number" min="1" value="${d.part}"></div>` }
