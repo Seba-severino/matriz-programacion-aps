@@ -14,7 +14,7 @@
 <meta name="apple-mobile-web-app-title" content="Matriz APS">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=DM+Mono:wght@400;500&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <!-- Firebase (sincronización en la nube por código) — carga solo online; offline/file:// se ignora -->
 <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -41,7 +41,7 @@ html[data-theme="dark"]{
   --aps-amarillo:#ffb04d; --aps-rojo:#ff9082;
 }
 *{box-sizing:border-box}
-body{margin:0;font-family:'Plus Jakarta Sans',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--txt);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+body{margin:0;font-family:'Hanken Grotesk',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--txt);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
 header.top{background:linear-gradient(105deg,var(--navy) 0%,var(--navy2) 55%,var(--navy3) 100%);color:#fff;padding:0 22px;height:60px;display:flex;align-items:center;gap:14px;box-shadow:0 3px 18px rgba(28,58,138,.4);position:sticky;top:0;z-index:100}
 header.top .logo{width:42px;height:42px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
 header.top h1{font-size:16px;margin:0;font-weight:700;letter-spacing:.2px}
@@ -92,7 +92,7 @@ label.f{display:block;font-size:12.5px;font-weight:600;margin-bottom:5px;color:v
 /* Globo de ayuda por campo */
 .tip{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:var(--border2);color:#fff;font-size:10px;font-weight:700;font-style:italic;font-family:Georgia,'Times New Roman',serif;cursor:help;margin-left:5px;vertical-align:middle;position:relative;user-select:none}
 .tip:hover{background:var(--navy)}
-.tip::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 9px);left:50%;transform:translateX(-50%);width:240px;background:var(--txt);color:var(--card);padding:9px 12px;border-radius:9px;font:400 12px/1.45 'Plus Jakarta Sans',sans-serif;text-align:left;white-space:normal;box-shadow:var(--shl);opacity:0;visibility:hidden;transition:.15s;z-index:300;pointer-events:none}
+.tip::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 9px);left:50%;transform:translateX(-50%);width:240px;background:var(--txt);color:var(--card);padding:9px 12px;border-radius:9px;font:400 12px/1.45 'Hanken Grotesk',sans-serif;text-align:left;white-space:normal;box-shadow:var(--shl);opacity:0;visibility:hidden;transition:.15s;z-index:300;pointer-events:none}
 .tip::before{content:'';position:absolute;bottom:calc(100% + 3px);left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--txt);opacity:0;visibility:hidden;transition:.15s;z-index:300}
 .tip:hover::after,.tip:hover::before{opacity:1;visibility:visible}
 @media(max-width:600px){.tip::after{width:180px}}
@@ -280,6 +280,57 @@ html[data-theme="dark"] .concl-rec{background:rgba(90,130,230,.12);border-color:
 html[data-theme="dark"] .tag.ok{background:rgba(70,200,120,.18);color:#8fe0a8}
 html[data-theme="dark"] .tag.bad{background:rgba(255,120,110,.18);color:#ffb0a6}
 html[data-theme="dark"] .fieldmsg,html[data-theme="dark"] .pvwarn{color:#ff9082}
+
+/* ============================================================
+   TEMA MODERNO — claro primario · acento mint→cyan · Bricolage + Hanken
+   ============================================================ */
+:root{
+  --navy:#0E9E86; --navy2:#14A79A; --navy3:#28A7DE;   /* ramp teal→sky (cabecera, activos) */
+  --cyan:#12C6A6;                                       /* acento mint (completado) */
+  --bg:#F2F6FB; --card:#FFFFFF; --surface:#FFFFFF; --s2:#F4F8FD;
+  --line:#E7EDF5; --border2:#D7E0ED;
+  --txt:#0F1B2D; --sub:#64748B; --muted2:#94A3B8;
+  --aps-verde:#0E9E86; --aps-verde-d:#0B7D6A; --aps-azul:#1596C7;
+  --grad:linear-gradient(135deg,#10C7A6,#22A5E0);
+  --grad-soft:linear-gradient(150deg,#E6FBF5,#E1F3FC);
+  --sh:0 6px 22px rgba(20,80,120,.07); --shl:0 16px 44px rgba(20,80,120,.16);
+  --ring:0 0 0 3px rgba(16,199,166,.22);
+}
+html[data-theme="dark"]{
+  --navy:#34E5C4; --navy2:#2FD6C6; --navy3:#38BDF8; --cyan:#34E5C4;
+  --bg:#0A0E17; --card:#141B27; --surface:#141B27; --s2:#1B2432;
+  --line:#233149; --border2:#2E3E58;
+  --txt:#E8EDF6; --sub:#8496B4; --muted2:#5C6980;
+  --aps-verde:#34E5C4; --aps-verde-d:#7FE7D4; --aps-azul:#38BDF8;
+  --grad:linear-gradient(135deg,#34E5C4,#38BDF8);
+  --grad-soft:linear-gradient(150deg,rgba(52,229,196,.14),rgba(56,189,248,.10));
+  --sh:0 8px 26px rgba(0,0,0,.42); --shl:0 18px 50px rgba(0,0,0,.55);
+  --ring:0 0 0 3px rgba(52,229,196,.28);
+}
+body{background:radial-gradient(120% 90% at 95% -8%, color-mix(in srgb, var(--cyan) 12%, var(--bg)) 0%, var(--bg) 48%) fixed, var(--bg)}
+
+/* Tipografía: Bricolage para títulos y cifras; Hanken para el resto */
+.card h2,.kpi .kv,header.top h1,.preview b,.efline b,.libhero .lh-t,.welcome h2{font-family:'Bricolage Grotesque','Hanken Grotesk',sans-serif}
+.card h2{color:var(--txt);font-weight:600;letter-spacing:-.02em;font-size:20px}
+.kpi .kv{font-weight:700;letter-spacing:-.01em}
+header.top h1{letter-spacing:-.01em}
+
+/* Botones: primario con degradado y elevación */
+.btn-p{background:var(--grad);box-shadow:0 6px 16px rgba(16,199,166,.26)}
+.btn-p:hover{background:var(--grad);filter:brightness(1.05);transform:translateY(-1px);box-shadow:0 9px 22px rgba(16,199,166,.32)}
+
+/* Navegación: activo con degradado suave y número en degradado */
+.nitem.active{background:var(--grad-soft);color:var(--aps-verde-d)}
+.nitem.active .nnum{background:var(--grad);border-color:transparent;color:#06312a}
+.nitem.done .nnum{background:var(--cyan);border-color:var(--cyan);color:#06312a}
+
+/* Acentos de sección y KPI con el degradado de marca */
+.sec-title::before,.kpi::before{background:var(--grad)}
+.kpi{background:var(--card);border:1px solid var(--line);box-shadow:var(--sh)}
+
+/* Zonas destacadas cohesionadas con el acento */
+.libhero,.welcome,.guia{background:var(--grad-soft);border-color:var(--border2)}
+.preview{background:var(--s2);border:1px solid var(--line)}
 </style>
 </head>
 <body>
